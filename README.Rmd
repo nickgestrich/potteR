@@ -16,18 +16,17 @@ knitr::opts_chunk$set(
 # potteR
 
 <!-- badges: start -->
-[![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
-[![CRAN status](https://www.r-pkg.org/badges/version/potteR)](https://CRAN.R-project.org/package=potteR)
 <!-- badges: end -->
 
-The goal of potteR is to ...
+This package contains functions to aid and streamline the analysis of archaeological ceramics from Africa. It is cerrently in the early stages of development.
 
 ## Installation
 
-You can install the development version of potteR like so:
+You can install the development version of potteR from [GitHub](https://github.com/) with:
 
 ``` r
-# FILL THIS IN! HOW CAN PEOPLE INSTALL YOUR DEV PACKAGE?
+# install.packages("devtools")
+devtools::install_github("nickgestrich/potteR")
 ```
 
 ## Example
