@@ -1,10 +1,11 @@
 Package: potteR
-Title: What the Package Does (One Line, Title Case)
+Title: Analysis of Archaeological Pottery from Africa
 Version: 0.0.0.9000
 Authors@R: 
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"),
-           comment = c(ORCID = "YOUR-ORCID-ID"))
-Description: What the package does (one paragraph).
+    person("Nikolas", "Gestrich", , "gestrich@uni-frankfurt.de", role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0001-6376-1972"))
+Description: This package provides functions for the analysis of archaeological ceramics from Africa. 
+It is intended to build up to a complete analytical workflow for artefacts recorded following the system proposed by Jesse & Nowotnick (2022)  
 License: MIT + file LICENSE
 Suggests: 
     testthat (>= 3.0.0)
