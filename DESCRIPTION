@@ -19,3 +19,6 @@ Imports:
     tidyselect
 URL: https://github.com/nickgestrich/potteR
 BugReports: https://github.com/nickgestrich/potteR/issues
+Depends: 
+    R (>= 2.10)
+LazyData: true
