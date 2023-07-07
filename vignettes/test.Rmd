@@ -1,0 +1,26 @@
+---
+title: "Summary of variables"
+author: "Nikolas Gestrich"
+date: "2023-07-11"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## Example
+
+```{r example, echo=FALSE}
+devtools::load_all()
+r <- potteR::get_summary(data)
+
+t <- purrr::map2(
+  r, names(r), 
+  function(x, y){
+    knitr::kable(x, caption = paste(y))
+    }
+  )
+print(r)
+```
+

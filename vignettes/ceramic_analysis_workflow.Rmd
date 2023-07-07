@@ -55,15 +55,78 @@ library(gridExtra)
 library(grid)
 
 pdf(here::here("summary.pdf"))
-purrr::map(rim_summary, function(x){
-  grid.newpage()
-  grid.table(x)})
+x <- purrr::map2(
+  rim_summary, names(rim_summary), function(x, y)
+  {knitr::kable(x, "simple", caption = paste(y))})
 dev.off()
+kableExtra::save_kable(x, file = here::here("summary.pdf"))
+
+x |> 
+purrr::imap(~
+    kableExtra::save_kable(file = here::here("summary.pdf")),
+                  bs_theme = 'journal', 
+                  self_contained = T, 
+                  x = kbl(.x, booktabs = T, align = c('l','l', 'c')) %>%
+                    kable_styling() 
+                   )
 
 
 
-# need to get names on the tables. 
+
+myfunction <- function(data, file){
+  
+  r <- get_summary(data)
+  
+  cat("---
+title: \"Summary of variables\"
+date: '`r strftime(Sys.time())`'
+output: 
+  pdf_document
+    
+---
+  
+\`\`\`{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+\`\`\`
+
+## Example
+\`\`\`{r example, echo=FALSE}
+r <- potteR::get_summary(data)
+
+t <- purrr::map2(
+  r, names(r), 
+  function(x, y){
+    knitr::kable(x, caption = paste(y))
+    }
+  )
+print(r)
+
+\`\`\`", 
+file = "tmp.Rmd")
+  rmarkdown::render("tmp.Rmd", output_file = file)
+}
+
+myfunction(rims_only, file = here::here("summary.pdf"))
+
 # need to cut off at 20 rows.
 
+print(x)
 
 ```
+
+Bivariate
+
+```{r}
+# it might be a good idea to center and standardise numerical values before analysing their distribution.
+center_and_standardise <- function(x) (x - mean(x, na.rm = TRUE) / sd(x, na.rm = TRUE))
+```
+
+Plots
+
+Maps
+
+Seriation
+
+Finding Groups
+
+Significance and Standardisation

@@ -1,0 +1,25 @@
+---
+title: "Summary of variables"
+date: '`r strftime(Sys.time())`'
+output: 
+  pdf_document
+    
+---
+  
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Example
+```{r example, echo=FALSE}
+r <- potteR::get_summary(data)
+
+t <- purrr::map2(
+  r, names(r), 
+  function(x, y){
+    knitr::kable(x, caption = paste(y))
+    }
+  )
+print(r)
+
+```
