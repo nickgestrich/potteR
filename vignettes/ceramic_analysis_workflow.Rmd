@@ -42,6 +42,18 @@ rims_only <- rims |>
 We would like a report table of key statistics and counts. This means counts of unique values in the categorical variables, and summaries of the numeric variables
 
 ```{r}
-x <- rims_only |> sum_categoricals()
+rim_summary_categorical <- rims_only |> sum_categoricals()
 
+sum_numerics <- function(data, var) {
+  data |> 
+    filter(!is.na({{ var }})) |> 
+    summarise(mean = mean({{ var }}),
+              min = min({{ var }}),
+              max = max({{ var }}),
+              sd = sd({{ var }}))
+}
+
+guinea[[1]] |> sum_numerics(mx_th)
+
+#solve with across and pivot_wider
 ```
