@@ -39,20 +39,31 @@ rims_only <- rims |>
 
 ## Summary statistics
 
-We would like a report table of key statistics and counts. This means counts of unique values in the categorical variables, and summaries of the numeric variables
+We would like a report of key statistics and counts. This means counts of unique values in the categorical variables, and summaries of the numeric variables
 
 ```{r}
-xx <- get_summary(rims_only)
+rim_summary <- get_summary(rims_only)
 
-get_summary <- function(data) {
-  x <- data |> sum_categoricals()
-  y <- data |> sum_numerics()
-  x <- append(x, list(y), 0)
-  names(x)[1] <- "numericals"
-  return(x)
-}
+library(gridExtra)
+pdf(here::here("summary.pdf"))
+for(i in rim_summary){
+  grid.table(i)
+  }
+dev.off()
+
+library(gridExtra)
+library(grid)
+
+pdf(here::here("summary.pdf"))
+purrr::map(rim_summary, function(x){
+  grid.newpage()
+  grid.table(x)})
+dev.off()
 
 
+
+# need to get names on the tables. 
+# need to cut off at 20 rows.
 
 
 ```
