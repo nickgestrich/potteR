@@ -1,0 +1,60 @@
+---
+title: "Example workflow for ceramic analysis using potteR"
+author: "Nick Gestrich"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{ceramic_analysis_workflow}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(potteR)
+library(dplyr)
+```
+
+## Example Data
+
+This example runs on data from a 2023 excavation in the Republic of Guinea. These are recorded using a modified version of the system proposed by Jesse & Nowotnick (2022). It is included in the package.
+
+```{r}
+rims <- guinea[[1]]
+body <- guinea[[2]]
+
+#some of the observations on rims are not made on body sherds. We will treat these observations separately
+all <- guinea[[3]]
+
+r <- names(rims)[! names(rims) %in% names(body)]
+
+rims_only <- rims |> 
+  select(all_of(r), site, sondage, context, unit_id, sond_con)
+```
+
+## Summary statistics
+
+We would like a report table of key statistics and counts. This means counts of unique values in the categorical variables, and summaries of the numeric variables
+
+```{r}
+
+count_percent <- function(data, var, ...) {
+  x <- data|> 
+    count({{var}}) |> 
+    mutate(pct = (n/sum(n)) * 100) |> 
+    arrange(desc(pct))
+  return(x)
+} 
+  
+rims_only |> count_percent(rim_angle)
+
+names <- rims_only |> select(where(is.character)) |> names()
+
+x <-names |> purrr::map(count_percent, data = rims_only)
+rims_only |> summarise(across(where(is.character), count_percent))
+```

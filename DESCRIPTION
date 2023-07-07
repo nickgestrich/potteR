@@ -7,6 +7,8 @@ Authors@R:
 Description: This package provides functions for the analysis of archaeological ceramics from Africa. It is intended to build up to a complete analytical workflow for artefacts recorded following the system proposed by Jesse & Nowotnick (2022).  
 License: MIT + file LICENSE
 Suggests: 
+    knitr,
+    rmarkdown,
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
 Encoding: UTF-8
@@ -22,3 +24,4 @@ BugReports: https://github.com/nickgestrich/potteR/issues
 Depends: 
     R (>= 2.10)
 LazyData: true
+VignetteBuilder: knitr
