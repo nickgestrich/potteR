@@ -19,6 +19,7 @@ Imports:
     purrr,
     rlang,
     tibble,
+    tidyr,
     tidyselect
 URL: https://github.com/nickgestrich/potteR
 BugReports: https://github.com/nickgestrich/potteR/issues

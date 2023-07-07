@@ -2,7 +2,10 @@
 
 export(count_percent)
 export(sum_categoricals)
+export(sum_numerics)
 export(to_row_percent)
 importFrom(rlang,.data)
+importFrom(stats,sd)
 importFrom(tibble,tibble)
+importFrom(tidyselect,everything)
 importFrom(tidyselect,where)
