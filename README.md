@@ -7,7 +7,7 @@
 <!-- badges: end -->
 
 This package contains functions to aid and streamline the analysis of
-archaeological ceramics from Africa. It is cerrently in the early stages
+archaeological ceramics from Africa. It is currently in the early stages
 of development.
 
 ## Installation
@@ -25,7 +25,7 @@ devtools::install_github("nickgestrich/potteR")
 This is a basic example which shows you how to solve a common problem:
 
 ``` r
-library(potteR)
+
 ## basic example code
 ```
 
