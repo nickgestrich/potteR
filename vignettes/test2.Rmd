@@ -1,0 +1,48 @@
+---
+title: "report"
+author: "Nikolas Gestrich"
+output: pdf_document:
+  df_print: kable
+---
+
+```{r setup}
+library(potteR)
+library(dplyr)
+library(purrr)
+library(knitr)
+```
+
+## Example Data
+
+This example runs on data from a 2023 excavation in the Republic of Guinea. These are recorded using a modified version of the system proposed by Jesse & Nowotnick (2022). It is included in the package.
+
+```{r}
+rims <- guinea[[1]]
+body <- guinea[[2]]
+
+#some of the observations on rims are not made on body sherds. We will treat these observations separately
+all <- guinea[[3]]
+
+r <- names(rims)[! names(rims) %in% names(body)]
+
+rims_only <- rims |> 
+  select(all_of(r), site, sondage, context, unit_id, sond_con)
+```
+
+## Summary statistics
+
+We would like a report of key statistics and counts. This means counts of unique values in the categorical variables, and summaries of the numeric variables
+```{r}
+rim_summary <- get_summary(rims_only)
+```
+
+```{r}
+out <- purrr::map_chr(
+    rim_summary,
+    function(tt){
+        knit_expand(text = "{{tt}}")
+        }
+    )
+```
+
+`r paste(knit(out), collapse = "\n")`
