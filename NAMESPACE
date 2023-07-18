@@ -2,6 +2,10 @@
 
 export(count_percent)
 export(get_summary)
+export(plot_categoricals)
+export(plot_numerics)
+export(plot_summary)
+export(print_summary)
 export(sum_categoricals)
 export(sum_numerics)
 export(to_row_percent)

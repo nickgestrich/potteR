@@ -39,89 +39,14 @@ rims_only <- rims |>
 
 ## Summary statistics
 
-We would like a report of key statistics and counts. This means counts of unique values in the categorical variables, and summaries of the numeric variables
+We would like a report of key statistics and counts. This means counts of unique values in the categorical variables, and summaries of the numeric variables. PotteR provides these as an R object in a list, and as a pdf report for perusal outside of R. 
 
 ```{r}
+# make a list of summaries for every variable
 rim_summary <- get_summary(rims_only)
 
-library(gridExtra)
-pdf(here::here("summary.pdf"))
-for(i in rim_summary){
-  grid.table(i)
-  }
-dev.off()
-
-library(gridExtra)
-library(grid)
-
-pdf(here::here("summary.pdf"))
-x <- purrr::map2(
-  rim_summary, names(rim_summary), function(x, y)
-  {knitr::kable(x, "simple", caption = paste(y))})
-dev.off()
-kableExtra::save_kable(x, file = here::here("summary.pdf"))
-
-x |> 
-purrr::imap(~
-    kableExtra::save_kable(file = here::here("summary.pdf")),
-                  bs_theme = 'journal', 
-                  self_contained = T, 
-                  x = kbl(.x, booktabs = T, align = c('l','l', 'c')) %>%
-                    kable_styling() 
-                   )
-
-
-
-
-myfunction <- function(data, file){
-  
-  r <- get_summary(data)
-  
-  cat("---
-title: \"Summary of variables\"
-date: '`r strftime(Sys.time())`'
-output: 
-  pdf_document:
-  df_print: kable
-    
----
-  
-\`\`\`{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-\`\`\`
-
-## Example
-\`\`\`{r example, echo=FALSE}
-r <- potteR::get_summary(data)
-
-out <- purrr::map(
-    r,
-    function(tt){
-        knitr::kable(tt)
-        }
-    )
-
-out |> purrr::map(print)
-\`\`\`", 
-file = "tmp.Rmd")
-  rmarkdown::render("tmp.Rmd", output_file = file)
-}
-
-myfunction(rims_only, file = here::here("summary.pdf"))
-
-# need to cut off at 20 rows.
-
-print(x)
-
-
-t <- purrr::map2(
-  rim_summary, names(rim_summary), 
-  function(x, y){
-    knitr::kable(x, caption = paste(y))
-    }
-  )
-#
-t |> purrr::map(print)
+# to generate a pdf report, uncomment and run the code below
+# print_summary(rims_only, file = here::here("summary.pdf"))
 ```
 
 Bivariate
