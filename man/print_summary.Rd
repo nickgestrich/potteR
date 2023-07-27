@@ -18,12 +18,7 @@ A pdf document.
 Generate a pdf report on all the variables in a dataset
 }
 \examples{
-<<<<<<< HEAD
 \dontrun{
 guinea[[3]] |>  print_summary(file = here::here("summary.pdf"))
 }
-=======
-guinea[[3]] |>  print_summary(file = here::here("summary.pdf"))
-
->>>>>>> bc46d271230e1bdfbe52534fdbc9bbc71dc98fc6
 }
