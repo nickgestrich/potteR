@@ -18,6 +18,7 @@ knitr::opts_chunk$set(
 ```{r setup}
 library(potteR)
 library(dplyr)
+library(ggplot2)
 ```
 
 ## Example Data
@@ -39,7 +40,7 @@ rims_only <- rims |>
 
 ## Summary statistics
 
-We would like a report of key statistics and counts. This means counts of unique values in the categorical variables, and summaries of the numeric variables. PotteR provides these as an R object in a list, and as a pdf report for perusal outside of R. 
+We would like a report of key statistics and counts. This means counts of unique values in the categorical variables, and summaries of the numeric variables. PotteR provides these as an R object in a list, and as a pdf report for perusal outside of R.
 
 ```{r}
 # make a list of summaries for every variable
@@ -49,19 +50,69 @@ rim_summary <- get_summary(rims_only)
 # print_summary(rims_only, file = here::here("summary.pdf"))
 ```
 
-Bivariate
+## Bivariate
 
 ```{r}
 # it might be a good idea to center and standardise numerical values before analysing their distribution.
 center_and_standardise <- function(x) (x - mean(x, na.rm = TRUE) / sd(x, na.rm = TRUE))
 ```
 
-Plots
+## Plots
 
-Maps
+We provide a ggplot theme for fast and unified styling of graphics.
 
-Seriation
+```{r}
+ggplot(rims) +
+  geom_point(aes(x = diam, y = mx_th, colour = sondage)) +
+  params_potteR
 
-Finding Groups
 
-Significance and Standardisation
+ggplot(rims) +
+  geom_boxplot(aes(x = sondage, y = mx_th, fill = sondage)) +
+  params_potteR
+
+params_potteR <- list(ggplot2::theme_bw(), 
+                      khroma::scale_colour_bright())
+theme_potteR <- function() {
+  ggplot2::theme_bw()+
+  khroma::scale_colour_bright()
+}
+  
+```
+
+## Maps
+
+## Seriation
+
+An important aspect of ceramic analysis is to find attributes or types that seriate. This has two main interpretive ends in archaeology. The first is to create orders in previously unordered data, for instance in a series of samples from survey or shovel testing. The second is to identify developments in series that have pre-defined orders, such as contexts from stratigraphic excavations.
+
+### Using seriation to order assemblages
+
+### Identifying developments in ordered assemblages
+
+We will here aim our seriation plot at decor types and rim types. We use the `plot_ford()` function from the [`tabula`](https://www.tesselle.org/packages.html) package to make these plots. The function given here adds ease in data preparation.
+
+A predefined order has to be given for the contexts or assemblages. This is then used as the `context_order` argument in the function.
+
+```{r}
+# Stratigraphic order of contexts for Unit B
+b_order <- c("1", "2", "3", "4", "5",  "6", "7",  "8",  "9",  "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23",  "24", "25", "26")
+
+rims_only |> 
+  filter(sondage == "B") |> # select only Unit B
+  plot_series(context, rim_type, b_order)
+```
+
+Since the returned plot is a ggplot object, it can be modified using ggplot syntax to add titles etc., e.g.:
+
+```{r}
+rims_only |> 
+  filter(sondage == "B") |> # select only Unit B
+  plot_series(context, rim_type, b_order) +
+  labs(title = "Rim Types from Unit B",
+       subtitle = "NDK1")
+```
+
+## Finding Groups
+
+## Significance and Standardisation
