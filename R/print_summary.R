@@ -10,10 +10,9 @@
 #'
 #' @examples
 #' \dontrun{
-#' guinea[[3]] |>  print_summary(file = here::here("summary.pdf"))
+#' guinea[[3]] |> print_summary(file = here::here("summary.pdf"))
 #' }
-print_summary <- function(data, file){
-
+print_summary <- function(data, file) {
   cat("---
 title: \"Summary of variables in `r paste(data)`\"
 date: '`r strftime(Sys.time())`'
@@ -42,6 +41,7 @@ l[[i]] + gridExtra::tableGrob(x[[i]] |> dplyr::slice_head(n = 15), rows = NULL)
 
 out
 \`\`\`",
-file = "tmp.Rmd")
+    file = "tmp.Rmd"
+  )
   rmarkdown::render("tmp.Rmd", output_file = file)
 }

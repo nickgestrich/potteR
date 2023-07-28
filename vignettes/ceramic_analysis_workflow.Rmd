@@ -19,6 +19,7 @@ knitr::opts_chunk$set(
 library(potteR)
 library(dplyr)
 library(tidyr)
+library(ggplot2)
 ```
 
 ## Example Data
@@ -227,7 +228,37 @@ Plots
 
 Maps
 
-Seriation
+## Seriation
+
+An important aspect of ceramic analysis is to find attributes or types that seriate. This has two main interpretive ends in archaeology. The first is to create orders in previously unordered data, for instance in a series of samples from survey or shovel testing. The second is to identify developments in series that have pre-defined orders, such as contexts from stratigraphic excavations. 
+
+### Using seriation to order assemblages
+
+### Identifying developments in ordered assemblages
+
+We will here aim our seriation plot at decor types and rim types. We use the plot_ford() function from the tabula package to make these plots. The function given here adds ease in data preparation.
+
+A predefined order has to be given for the contexts or assemblages. This is then used as the context_order argument in the function.
+
+```{r}
+# Stratigraphic order of contexts for Unit B
+b_order <- c("1", "2", "3", "4", "5",  "6", "7",  "8",  "9",  "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23",  "24", "25", "26")
+
+rims_only |> 
+  filter(sondage == "B") |> # select only Unit B
+  plot_series(context, rim_type, b_order)
+```
+
+Since the returned plot is a ggplot object, it can be modified using ggplot syntax to add titles etc., e.g.:
+
+```{r}
+rims_only |> 
+  filter(sondage == "B") |> # select only Unit B
+  plot_series(context, rim_type, b_order) +
+  labs(title = "Rim Types from Unit B",
+       subtitle = "NDK1")
+```
+
 
 Finding Groups
 

@@ -7,8 +7,7 @@
 #'
 #' @examples
 #' guinea[[3]] |> plot_summary()
-
-plot_summary <- function(data){
+plot_summary <- function(data) {
   num <- plot_numerics(data)
   cat <- sum_categoricals(data) |>
     plot_categoricals()

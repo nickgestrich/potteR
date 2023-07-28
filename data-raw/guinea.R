@@ -6,10 +6,10 @@ library(janitor)
 library(tidyr)
 library(stringr)
 
-rim <- read_excel(here::here("U:/github projects/guinea/excavation/ceramics/data/Projet Niger Milo 2023 Ceramique tessons.xlsx"),sheet = "tessons de bord")
-body <- read_excel(here::here("U:/github projects/guinea/excavation/ceramics/data/Projet Niger Milo 2023 Ceramique tessons.xlsx"),sheet = "tessons de planse")
+rim <- read_excel(here::here("U:/github projects/guinea/excavation/ceramics/data/Projet Niger Milo 2023 Ceramique tessons.xlsx"), sheet = "tessons de bord")
+body <- read_excel(here::here("U:/github projects/guinea/excavation/ceramics/data/Projet Niger Milo 2023 Ceramique tessons.xlsx"), sheet = "tessons de planse")
 
-#take only site NDK1
+# take only site NDK1
 rim <- rim |>
   janitor::clean_names() |>
   filter(site == "NDK1")
@@ -18,36 +18,40 @@ body <- body |>
   janitor::clean_names() |>
   filter(site == "NDK1")
 
-#make data uniform
+# make data uniform
 rim <- rim |>
   rename(rim_angle = x, rim_type = rim) |>
   separate(context, into = c("sondage", "context"), sep = "-")
 
 body <- body |>
-  mutate(col = as.character(col),
-         inc = as.character(inc)) |> # in future, check all data types programmatically
+  mutate(
+    col = as.character(col),
+    inc = as.character(inc)
+  ) |> # in future, check all data types programmatically
   separate(cont, into = c("sondage", "context")) # here the data is not uniform, so more work is needed to extract these columns properly
 
 body1 <- body |> filter(sondage %in% c("T1", "B"))
 body2 <- body |>
   filter(!sondage %in% c("T1", "B")) |>
   mutate(context = sondage) |>
-  mutate(sondage = str_sub(sondage, 1, 1),
-         context = str_sub(context, 2, 3))
+  mutate(
+    sondage = str_sub(sondage, 1, 1),
+    context = str_sub(context, 2, 3)
+  )
 
 body <- bind_rows(body1, body2)
 
 rm(body1, body2)
 
-#into both datasets, add a combined unit-context vector
+# into both datasets, add a combined unit-context vector
 rim <- rim |> mutate(sond_con = paste(sondage, context, sep = "-"))
 body <- body |> mutate(sond_con = paste(sondage, context, sep = "-"))
 
 # unify data types
-#the numeric variables
+# the numeric variables
 numerics <- c("n_sh", "diam", "mx_th", "min_th")
 
-#convert all others to character vectors
+# convert all others to character vectors
 rim <- rim |>
   mutate_if(!(names(rim) %in% numerics), as.character)
 

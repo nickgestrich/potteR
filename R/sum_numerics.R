@@ -16,8 +16,10 @@ sum_numerics <- function(data) {
     tidyr::pivot_longer(everything()) |>
     dplyr::group_by(.data$name) |>
     tidyr::drop_na() |>
-    dplyr::summarise(mean = mean(.data$value),
-                     min = min(.data$value),
-                     max = max(.data$value),
-                     sd = sd(.data$value))
+    dplyr::summarise(
+      mean = mean(.data$value),
+      min = min(.data$value),
+      max = max(.data$value),
+      sd = sd(.data$value)
+    )
 }
