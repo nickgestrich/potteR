@@ -18,6 +18,7 @@ knitr::opts_chunk$set(
 ```{r setup}
 library(potteR)
 library(dplyr)
+library(tidyr)
 ```
 
 ## Example Data
@@ -37,9 +38,9 @@ rims_only <- rims |>
   select(all_of(r), site, sondage, context, unit_id, sond_con)
 ```
 
-## Summary statistics
+## 1. Univariate summary statistics
 
-We would like a report of key statistics and counts. This means counts of unique values in the categorical variables, and summaries of the numeric variables. PotteR provides these as an R object in a list, and as a pdf report for perusal outside of R. 
+We begin our explorative data analysis with a report of summary statistics and counts of each variable. This means counts of unique values in the categorical variables, and summaries of the numeric variables. PotteR provides these as an R object in a list, and as a pdf report for perusal outside of R. The pdf version also includes a basic visualisation for each variable.
 
 ```{r}
 # make a list of summaries for every variable
@@ -49,11 +50,177 @@ rim_summary <- get_summary(rims_only)
 # print_summary(rims_only, file = here::here("summary.pdf"))
 ```
 
-Bivariate
+It will often not be necessary to run these functions on the entire dataset. In that case, a selection of variables can be made first.
+
+```{r}
+#| output: false
+rims_only |> 
+  select(parts:rim_type) |> 
+  get_summary()
+```
+
+## 2. Fixing errors in the data
+
+The univariate reports frequently show up errors in the data. These should be fixed and the reports rerun before moving on to further analyses.
+
+### Replace individual values
+
+The package provides a small wrapper function to replace individual cases.
+
+```{r}
+replace_values <- function(data, col, old, new){
+  data |> 
+    dplyr::mutate({{col}} := replace({{col}}, {{col}} == old, new))
+}
+
+rims_only <- rims_only |> replace_values(rim_angle, 43, 4)
+```
+
+Note that this method does not apply to NA values.
+
+### Setting and replacing NA values
+
+To replace all NAs in a variable with a different value (e.g. 0), use the replace_na() function from the tidyr package.
+
+```{r}
+rims_only$rim_angle |> replace_na("missing")
+```
+
+To replace a value with NA, use the na_if() function from the dplyr package. Also see the documentation [here](https://dplyr.tidyverse.org/reference/na_if.html).
+
+```{r}
+rims_only |> mutate(diam = na_if(diam, 0))
+
+# do this for several columns using across()
+rims_only |> 
+  mutate(across(where(is.numeric), ~na_if(., 0)))
+```
+
+### Making several replacements
+
+More numerous replacements are best done using dplyr's case_match() function in the following manner:
+
+```{r}
+rims_only <- rims_only |> 
+  dplyr::mutate(rim_type = case_match(rim_type, 
+                                      c("SI", "Si") ~ "S1",
+                                      c("T1(?)", "T1...") ~ "T1",
+                                      .default = rim_type
+                                      ))
+```
+
+## 3. Bivariate statistics
+
+The next step in the exploratory phase of the analysis is to survey the variables for possible correlation. It is expedient to do this visually at first. The package provides a function which generates a pdf of bivariate combinations. Look at these and decide which relationships to follow up on.
 
 ```{r}
 # it might be a good idea to center and standardise numerical values before analysing their distribution.
 center_and_standardise <- function(x) (x - mean(x, na.rm = TRUE) / sd(x, na.rm = TRUE))
+
+
+library(ggplot2)
+
+l <- combn(names(rims_only), 2, simplify = FALSE)
+
+ldf <- as.data.frame(do.call(rbind, l))
+
+out <- vector("list", length = length(l))
+for(i in seq_along(l)){
+  
+ out[[i]] <-  rims_only |> 
+   ggplot(aes_string(x = l[[i]][1], y = l[[i]][2])) + 
+  geom_point()+
+  geom_smooth(method = "lm")+  
+  theme_bw()
+}
+out[[20]]
+
+
+plot_scatter <- function(data, x_var, y_var){
+  data |> 
+  ggplot(aes(x = .data[[x_var]], y = .data[[y_var]])) + 
+  geom_point()+
+  geom_smooth(method = "lm")+  
+  theme_bw()
+}
+
+
+
+p <- names(rims_only)[-1] |> 
+  purrr::map( ~ plot_scatter(rims_only, names(rims_only)[1], .x))
+
+p <- l |> 
+  purrr::map( function(x) plot_scatter(rims_only, l[[x[1]]], l[[x[2]]]))
+
+p[[20]]
+print_2var <- function(data){}
+
+# 1. two numerical variables
+
+make_plot <- function(data, x_var, y_var){
+  if(is.numeric(.data[[x_var]]) & is.numeric(.data[[y_var]])){
+  
+    data |> 
+    ggplot(aes(x = .data[[x_var]], y = .data[[y_var]])) + 
+    geom_point()+
+    geom_smooth(method = "lm")+  
+    theme_bw()
+
+  }
+  
+  if(is.character(.data[[x_var]]) & is.numeric(.data[[x_var]])){
+    
+    data |> 
+    select({{x_var}}, {{y_var}}) |> 
+    tidyr::drop_na() |> 
+    ggplot(aes(x = reorder(.data[[x_var]], .data[[y_var]]), y = .data[[y_var]])) + 
+    geom_boxplot()+
+    theme_bw()+
+    labs(x = rlang::englue("{{x_var}}"),
+         y = rlang::englue("{{y_var}}"))
+    
+  }
+}
+
+rims_only |> make_plot(rim_angle, diam)
+
+if(is.numeric(.data${{x_var}}) & is.numeric(.data${{y}})){
+  
+  data |> 
+  ggplot(aes(x = l[[1]][1], y = {{y}})) + 
+  geom_point()+
+  geom_smooth(method = "lm")+  
+  theme_bw()
+    
+
+  }
+
+# 2. numerical and categorical
+
+plot_box <- function(data, x, y, ...){
+  data |> 
+    select({{x}}, {{y}}) |> 
+    tidyr::drop_na() |> 
+    ggplot(aes(x = reorder({{x_var}}, {{y_var}}), y = {{y_var}})) + 
+    geom_boxplot()+
+    theme_bw()+
+    labs(x = rlang::englue("{{x_var}}"),
+         y = rlang::englue("{{y_var}}"))
+}
+
+# 3. two categorical variables
+# it is important here to program the variable with the larger number of categories as x
+
+plot_bar_group <- function(data, x, y){
+  data |>
+    select({{x}}, {{y}}) |> 
+    tidyr::drop_na() |> 
+    ggplot(aes(x = {{ x }}, fill  = {{ y }}))+
+    geom_bar(position = "dodge")+
+    theme_bw()
+}
+
+rims_only |> plot_bar_group(rim_type, rim_angle)
 ```
 
 Plots
