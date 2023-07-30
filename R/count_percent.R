@@ -11,8 +11,8 @@
 #' rims <- guinea[[1]]
 #' rims |> count_percent(rim_angle)
 count_percent <- function(data, var) {
-  data|>
-    dplyr::count({{var}}) |>
-    dplyr::mutate(pct = (.data$n/sum(.data$n)) * 100) |>
+  data |>
+    dplyr::count({{ var }}) |>
+    dplyr::mutate(pct = (.data$n / sum(.data$n)) * 100) |>
     dplyr::arrange(dplyr::desc(.data$pct))
 }

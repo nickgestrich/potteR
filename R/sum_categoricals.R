@@ -7,7 +7,7 @@
 #'
 #' @examples
 #' guinea[[1]] |> sum_categoricals()
-sum_categoricals <- function(data){
+sum_categoricals <- function(data) {
   data |>
     dplyr::select(where(is.character)) |>
     purrr::map(count_percent, data = data)
