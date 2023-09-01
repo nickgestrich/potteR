@@ -41,11 +41,7 @@ rims_only <- rims |>
 
 ## 1. Univariate summary statistics
 
-<<<<<<< HEAD
-We would like a report of key statistics and counts. This means counts of unique values in the categorical variables, and summaries of the numeric variables. PotteR provides these as an R object in a list, and as a pdf report for perusal outside of R.
-=======
 We begin our explorative data analysis with a report of summary statistics and counts of each variable. This means counts of unique values in the categorical variables, and summaries of the numeric variables. PotteR provides these as an R object in a list, and as a pdf report for perusal outside of R. The pdf version also includes a basic visualisation for each variable.
->>>>>>> f22eda161000596596860082449d0a1f6cb3aba2
 
 ```{r}
 # make a list of summaries for every variable
@@ -55,9 +51,6 @@ rim_summary <- get_summary(rims_only)
 # print_summary(rims_only, file = here::here("summary.pdf"))
 ```
 
-<<<<<<< HEAD
-## Bivariate
-=======
 It will often not be necessary to run these functions on the entire dataset. In that case, a selection of variables can be made first.
 
 ```{r}
@@ -120,10 +113,20 @@ rims_only <- rims_only |>
 ## 3. Bivariate statistics
 
 The next step in the exploratory phase of the analysis is to survey the variables for possible correlation. It is expedient to do this visually at first. The package provides a function which generates a pdf of bivariate combinations. Look at these and decide which relationships to follow up on.
->>>>>>> f22eda161000596596860082449d0a1f6cb3aba2
+
 
 ```{r}
-# it might be a good idea to center and standardise numerical values before analysing their distribution.
+#' Coding steps:
+#' 1: decide on visualisation for three possibilities: a)both numeric, b)both categorical, 
+#'  c)numeric & categorical
+#' 2: place in function 
+#' 3: map to all possibilities
+#' 4: export pdf
+
+# 1: visualisation for three possibilities
+# a: both numeric
+
+# it might be a good idea to center and standardise numerical values before analysing their distribution. To discuss with Cezary.
 center_and_standardise <- function(x) (x - mean(x, na.rm = TRUE) / sd(x, na.rm = TRUE))
 
 
@@ -131,7 +134,22 @@ library(ggplot2)
 
 l <- combn(names(rims_only), 2, simplify = FALSE)
 
+l <- purrr::map(l, append, 'rims_only', after = 0)
+
+
+
+p <- do.call(make_quick_plot, as.list(l[[1]]))
+
+purrr::map(l, ~do.call(make_quick_plot, as.list(.x)))
 ldf <- as.data.frame(do.call(rbind, l))
+make_quick_plot(data = eval(parse(text = ldf$V1)), ldf$V2, ldf$V3)
+
+lapply(l, function(x) do.call(make_quick_plot, as.list(x)))
+
+x <- as.list(ldf$V2)
+y <- as.list(ldf$V3)
+
+purrr::map2(x, y, make_quick_plot, data = rims_only)
 
 out <- vector("list", length = length(l))
 for(i in seq_along(l)){
@@ -166,56 +184,93 @@ print_2var <- function(data){}
 
 # 1. two numerical variables
 
-make_plot <- function(data, x_var, y_var){
-  if(is.numeric(.data[[x_var]]) & is.numeric(.data[[y_var]])){
+make_quick_plot <- function(data, x_var, y_var, ...){
+  
+  plot_box <- function(df, catvar, numvar, ...){
+  df |> 
+    select({{catvar}}, {{numvar}}) |> 
+    tidyr::drop_na() |> 
+    ggplot(aes(x = reorder({{catvar}}, {{numvar}}), y = {{numvar}})) + 
+    geom_boxplot()+
+    theme_bw()+
+    labs(x = rlang::englue("{{catvar}}"),
+         y = rlang::englue("{{numvar}}"))
+  }
+  
+  plot_bar_group <- function(df, x, y, ...){
+  df |>
+    select({{x}}, {{y}}) |> 
+    tidyr::drop_na() |> 
+    ggplot(aes(x = {{ x }}, fill  = {{ y }}))+
+    geom_bar(position = "dodge")+
+    theme_bw()
+  }
+  
+  
+  if(is.numeric(eval(substitute(x_var), data)) && is.numeric(eval(substitute(y_var), data))){
   
     data |> 
-    ggplot(aes(x = .data[[x_var]], y = .data[[y_var]])) + 
+    ggplot(aes(x = {{x_var}}, y = {{y_var}})) + 
     geom_point()+
     geom_smooth(method = "lm")+  
     theme_bw()
 
   }
   
-  if(is.character(.data[[x_var]]) & is.numeric(.data[[x_var]])){
+  else if(is.character(eval(substitute(x_var), data)) && is.numeric(eval(substitute(y_var), data))){
     
-    data |> 
-    select({{x_var}}, {{y_var}}) |> 
-    tidyr::drop_na() |> 
-    ggplot(aes(x = reorder(.data[[x_var]], .data[[y_var]]), y = .data[[y_var]])) + 
-    geom_boxplot()+
-    theme_bw()+
-    labs(x = rlang::englue("{{x_var}}"),
-         y = rlang::englue("{{y_var}}"))
+    plot_box(data, catvar = {{x_var}}, numvar = {{y_var}})
     
+  }
+    
+  else if(is.numeric(eval(substitute(x_var), data)) && is.character(eval(substitute(y_var), data))){
+    
+    plot_box(data, catvar = {{y_var}}, numvar = {{x_var}})
+    
+  }
+  else if(is.character(eval(substitute(x_var), data)) && is.character(eval(substitute(y_var), data))){
+    if(n_distinct(eval(substitute(x_var), data)) > n_distinct(eval(substitute(y_var), data))){
+      plot_bar_group(data, {{x_var}}, {{y_var}})
+    }
+    else{
+      plot_bar_group(data, {{y_var}}, {{x_var}})
+    }
   }
 }
 
-rims_only |> make_plot(rim_angle, diam)
+rims_only |> make_quick_plot(rim_type, sondage)
 
-if(is.numeric(.data${{x_var}}) & is.numeric(.data${{y}})){
+n_distinct(rims_only$rim_angle)
+
+make_scatter <- function(data, x_var, y_var, ...){
+if(is.numeric(eval(substitute(x_var), data)) && is.numeric(eval(substitute(y_var), data))){
   
-  data |> 
-  ggplot(aes(x = l[[1]][1], y = {{y}})) + 
-  geom_point()+
-  geom_smooth(method = "lm")+  
-  theme_bw()
-    
+    data |> 
+    ggplot(aes(x = {{x_var}}, y = {{y_var}})) + 
+    geom_point()+
+    geom_smooth(method = "lm")+  
+    theme_bw()
 
   }
+  }
+
+rims_only |> make_scatter(min_th, diam)
+
 
 # 2. numerical and categorical
 
-plot_box <- function(data, x, y, ...){
+plot_box <- function(data, catvar, numvar, ...){
   data |> 
-    select({{x}}, {{y}}) |> 
+    select({{catvar}}, {{numvar}}) |> 
     tidyr::drop_na() |> 
-    ggplot(aes(x = reorder({{x_var}}, {{y_var}}), y = {{y_var}})) + 
+    ggplot(aes(x = reorder({{catvar}}, {{numvar}}), y = {{numvar}})) + 
     geom_boxplot()+
     theme_bw()+
-    labs(x = rlang::englue("{{x_var}}"),
-         y = rlang::englue("{{y_var}}"))
+    labs(x = rlang::englue("{{catvar}}"),
+         y = rlang::englue("{{numvar}}"))
 }
+
+rims_only |> plot_box(rim_angle, diam)
 
 # 3. two categorical variables
 # it is important here to program the variable with the larger number of categories as x
@@ -236,46 +291,17 @@ rims_only |> plot_bar_group(rim_type, rim_angle)
 
 We provide a ggplot theme for fast and unified styling of graphics.
 
-<<<<<<< HEAD
+
 ```{r}
 ggplot(rims) +
   geom_point(aes(x = diam, y = mx_th, colour = sondage)) +
-  params_potteR
-=======
-## Seriation
+  theme_potteR()
 
-An important aspect of ceramic analysis is to find attributes or types that seriate. This has two main interpretive ends in archaeology. The first is to create orders in previously unordered data, for instance in a series of samples from survey or shovel testing. The second is to identify developments in series that have pre-defined orders, such as contexts from stratigraphic excavations. 
-
-### Using seriation to order assemblages
-
-### Identifying developments in ordered assemblages
-
-We will here aim our seriation plot at decor types and rim types. We use the plot_ford() function from the tabula package to make these plots. The function given here adds ease in data preparation.
-
-A predefined order has to be given for the contexts or assemblages. This is then used as the context_order argument in the function.
-
-```{r}
-# Stratigraphic order of contexts for Unit B
-b_order <- c("1", "2", "3", "4", "5",  "6", "7",  "8",  "9",  "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23",  "24", "25", "26")
-
-rims_only |> 
-  filter(sondage == "B") |> # select only Unit B
-  plot_series(context, rim_type, b_order)
 ```
 
-Since the returned plot is a ggplot object, it can be modified using ggplot syntax to add titles etc., e.g.:
+
 
 ```{r}
-rims_only |> 
-  filter(sondage == "B") |> # select only Unit B
-  plot_series(context, rim_type, b_order) +
-  labs(title = "Rim Types from Unit B",
-       subtitle = "NDK1")
-```
-
->>>>>>> f22eda161000596596860082449d0a1f6cb3aba2
-
-
 ggplot(rims) +
   geom_boxplot(aes(x = sondage, y = mx_th, fill = sondage)) +
   params_potteR
@@ -288,6 +314,9 @@ theme_potteR <- function() {
 }
   
 ```
+
+
+
 
 ## Maps
 
