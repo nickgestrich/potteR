@@ -73,7 +73,7 @@ replace_values <- function(data, col, old, new){
   data |> 
     dplyr::mutate({{col}} := replace({{col}}, {{col}} == old, new))
 }
-
+ö
 rims_only <- rims_only |> replace_values(rim_angle, 43, 4)
 ```
 
