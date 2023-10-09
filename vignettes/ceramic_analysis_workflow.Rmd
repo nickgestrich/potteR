@@ -73,7 +73,7 @@ replace_values <- function(data, col, old, new){
   data |> 
     dplyr::mutate({{col}} := replace({{col}}, {{col}} == old, new))
 }
-ö
+
 rims_only <- rims_only |> replace_values(rim_angle, 43, 4)
 ```
 
@@ -305,7 +305,99 @@ rims_only |>
   labs(title = "Rim Types from Unit B",
        subtitle = "NDK1")
 ```
+## simplified rims
+This function selects only the letters in front of the numbers in the rim_type. The aim is to only get a general type e.g. simple, so it is easier to categorise
+```{r}
+add_simple_rim <- function(data){
+  
+  
+  
+data <- data |> 
+    mutate(simple_rim_type = gsub("([0-9].*)", "", rim_type))
+  
+  return(data)
+} 
+```
 
 ## Finding Groups
+
+```{r}
+library(FactoMineR)
+library(factoextra)
+library(here)
+guinea <- load("D:/Git/potteR/data/guinea.rda")
+
+rims <- guinea[[1]]
+
+
+
+FAMD()
+
+res.hcpc <- rims |> 
+tibble::column_to_rownames("unit_id") |> 
+  select(diam, rim_angle) |> 
+filter(!if_any(everything(), is.na)) |> 
+  FAMD() |> 
+  HCPC(graph = FALSE)
+  
+  
+
+res.hcpc$data.clust
+  fviz_cluster(geom = "point", main = "Factor map", axes = c(1,2)) 
+
+
+ 
+  
+res.famd <- rims |> 
+tibble::column_to_rownames("unit_id") |> 
+  select(diam, rim_angle, simple_rim_type) |> 
+filter(!if_any(everything(), is.na)) |> 
+  FAMD()
+
+ res.hcpc <- HCPC(res.famd, graph = FALSE)  
+
+res.hcpc$data.clust
+
+res.hcpc <- rims |> 
+tibble::column_to_rownames("unit_id") |> 
+  select(diam, rim_angle, rim_type) |> 
+filter(!if_any(everything(), is.na)) |> 
+  FAMD() |> 
+  HCPC(graph = FALSE)  
+
+res.hcpc$data.clust
+
+
+
+```
+
+```{r}
+rims <- add_simple_rim(rims)
+
+
+form_groups <- function(data){
+  res.famd <- rims |> 
+tibble::column_to_rownames("unit_id") |> 
+  select(diam, rim_angle, simple_rim_type) |> 
+filter(!if_any(everything(), is.na)) |> 
+  FAMD()
+  
+  res.hcpc <- HCPC(res.famd, graph = FALSE)  
+  
+  plot <-  fviz_cluster(res.hcpc, geom = "point", main = "Factor map", axes = c(1,2)) 
+
+data_clust  <- res.hcpc$data.clust
+  
+ form_groups <- list(data_clust, plot, res.hcpc, res.famd)
+ 
+ return(form_groups)
+ 
+}
+
+fg <- form_groups(rims)
+
+fg[1]
+```
+
 
 ## Significance and Standardisation
