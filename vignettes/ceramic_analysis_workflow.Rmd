@@ -386,9 +386,15 @@ filter(!if_any(everything(), is.na)) |>
   
   plot <-  fviz_cluster(res.hcpc, geom = "point", main = "Factor map", axes = c(1,2)) 
 
-data_clust  <- res.hcpc$data.clust
+data_clust_s  <- res.hcpc$data.clust 
+
+data_clust <- data_clust_s |> 
+  tibble::rownames_to_column("unit_id") 
+
+data_clust <- data |> 
+  left_join(data_clust)
   
- form_groups <- list(data_clust, plot, res.hcpc, res.famd)
+ form_groups <- list(data_clust, data_clust_s, plot, res.hcpc, res.famd)
  
  return(form_groups)
  
@@ -396,7 +402,8 @@ data_clust  <- res.hcpc$data.clust
 
 fg <- form_groups(rims)
 
-fg[1]
+fg[2]
+fg[3]
 ```
 
 
