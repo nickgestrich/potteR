@@ -14,7 +14,7 @@
 #' }
 print_summary <- function(data, file) {
   cat("---
-title: \"Summary of variables in `r paste(data)`\"
+title: \"Summary of variables`r paste(data)`\"
 date: '`r strftime(Sys.time())`'
 output:
   pdf_document
@@ -29,7 +29,7 @@ knitr::opts_chunk$set(echo = FALSE, cache = TRUE)
 
 library(patchwork)
 
-l <- plot_summary(data)
+l <- potteR::plot_summary(data)
 x <- potteR::get_summary(data)
 
 out <- vector('list', length = length(l))

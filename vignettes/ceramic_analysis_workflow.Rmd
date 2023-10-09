@@ -48,7 +48,7 @@ We begin our explorative data analysis with a report of summary statistics and c
 rim_summary <- get_summary(rims_only)
 
 # to generate a pdf report, uncomment and run the code below
-# print_summary(rims_only, file = here::here("summary.pdf"))
+print_summary(rims_only, file = here::here("summary.pdf"))
 ```
 
 It will often not be necessary to run these functions on the entire dataset. In that case, a selection of variables can be made first.
@@ -116,17 +116,72 @@ The next step in the exploratory phase of the analysis is to survey the variable
 
 
 ```{r}
-#' Coding steps:
-#' 1: decide on visualisation for three possibilities: a)both numeric, b)both categorical, 
-#'  c)numeric & categorical
-#' 2: place in function 
-#' 3: map to all possibilities
-#' 4: export pdf
+# Function that creates one of three plots, according to variable type:
+make_quick_plot <- function(data, x_var, y_var, ...){
+  
+  plot_box <- function(df, catvar, numvar, ...){
+  df |> 
+    select({{catvar}}, {{numvar}}) |> 
+    tidyr::drop_na() |> 
+    ggplot(aes(x = reorder({{catvar}}, {{numvar}}), y = {{numvar}})) + 
+    geom_boxplot()+
+    theme_bw()+
+    labs(x = rlang::englue("{{catvar}}"),
+         y = rlang::englue("{{numvar}}"))
+  }
+  
+  plot_bar_group <- function(df, x, y, ...){
+  df |>
+    select({{x}}, {{y}}) |> 
+    tidyr::drop_na() |> 
+    ggplot(aes(x = {{ x }}, fill  = {{ y }}))+
+    geom_bar(position = "dodge")+
+    theme_bw()
+  }
+  
+  
+  if(is.numeric(eval(substitute(x_var), data)) && is.numeric(eval(substitute(y_var), data))){
+  
+    data |> 
+    ggplot(aes(x = {{x_var}}, y = {{y_var}})) + 
+    geom_point()+
+    geom_smooth(method = "lm")+  
+    theme_bw()
 
-# 1: visualisation for three possibilities
-# a: both numeric
+  }
+  
+  else if(is.character(eval(substitute(x_var), data)) && is.numeric(eval(substitute(y_var), data))){
+
+    
+    plot_box(data, catvar = {{x_var}}, numvar = {{y_var}})
+    
+  }
+  
+  else if(is.character(eval(substitute(y_var), data)) && is.numeric(eval(substitute(x_var), data))){
+
+    
+    plot_box(data, catvar = {{y_var}}, numvar = {{x_var}})
+    
+  }
+    
+  else if(is.character(eval(substitute(x_var), data)) && is.character(eval(substitute(y_var), data))){
+    if(n_distinct(eval(substitute(x_var), data)) > n_distinct(eval(substitute(y_var), data))){
+      plot_bar_group(data, {{x_var}}, {{y_var}})
+    }
+    else{
+      plot_bar_group(data, {{y_var}}, {{x_var}})
+    }
+  }
+}
+
+
+rims_only |> make_quick_plot(mx_th, rim_angle)
+
+
 
 # it might be a good idea to center and standardise numerical values before analysing their distribution. To discuss with Cezary.
+
+
 center_and_standardise <- function(x) (x - mean(x, na.rm = TRUE) / sd(x, na.rm = TRUE))
 
 
@@ -174,118 +229,20 @@ plot_scatter <- function(data, x_var, y_var){
 
 
 p <- names(rims_only)[-1] |> 
-  purrr::map( ~ plot_scatter(rims_only, names(rims_only)[1], .x))
+  purrr::map( ~ make_quick_plot(rims_only, names(rims_only)[1], .x))
 
 p <- l |> 
-  purrr::map( function(x) plot_scatter(rims_only, l[[x[1]]], l[[x[2]]]))
+  purrr::map( function(x) make_quick_plot(rims_only, l[[x[1]]], l[[x[2]]]))
 
 p[[20]]
 print_2var <- function(data){}
 
-# 1. two numerical variables
-
-make_quick_plot <- function(data, x_var, y_var, ...){
-  
-  plot_box <- function(df, catvar, numvar, ...){
-  df |> 
-    select({{catvar}}, {{numvar}}) |> 
-    tidyr::drop_na() |> 
-    ggplot(aes(x = reorder({{catvar}}, {{numvar}}), y = {{numvar}})) + 
-    geom_boxplot()+
-    theme_bw()+
-    labs(x = rlang::englue("{{catvar}}"),
-         y = rlang::englue("{{numvar}}"))
-  }
-  
-  plot_bar_group <- function(df, x, y, ...){
-  df |>
-    select({{x}}, {{y}}) |> 
-    tidyr::drop_na() |> 
-    ggplot(aes(x = {{ x }}, fill  = {{ y }}))+
-    geom_bar(position = "dodge")+
-    theme_bw()
-  }
-  
-  
-  if(is.numeric(eval(substitute(x_var), data)) && is.numeric(eval(substitute(y_var), data))){
-  
-    data |> 
-    ggplot(aes(x = {{x_var}}, y = {{y_var}})) + 
-    geom_point()+
-    geom_smooth(method = "lm")+  
-    theme_bw()
-
-  }
-  
-  else if(is.character(eval(substitute(x_var), data)) && is.numeric(eval(substitute(y_var), data))){
-    
-    plot_box(data, catvar = {{x_var}}, numvar = {{y_var}})
-    
-  }
-    
-  else if(is.numeric(eval(substitute(x_var), data)) && is.character(eval(substitute(y_var), data))){
-    
-    plot_box(data, catvar = {{y_var}}, numvar = {{x_var}})
-    
-  }
-  else if(is.character(eval(substitute(x_var), data)) && is.character(eval(substitute(y_var), data))){
-    if(n_distinct(eval(substitute(x_var), data)) > n_distinct(eval(substitute(y_var), data))){
-      plot_bar_group(data, {{x_var}}, {{y_var}})
-    }
-    else{
-      plot_bar_group(data, {{y_var}}, {{x_var}})
-    }
-  }
-}
-
-rims_only |> make_quick_plot(rim_type, sondage)
-
-n_distinct(rims_only$rim_angle)
-
-make_scatter <- function(data, x_var, y_var, ...){
-if(is.numeric(eval(substitute(x_var), data)) && is.numeric(eval(substitute(y_var), data))){
-  
-    data |> 
-    ggplot(aes(x = {{x_var}}, y = {{y_var}})) + 
-    geom_point()+
-    geom_smooth(method = "lm")+  
-    theme_bw()
-
-  }
-  }
-
-rims_only |> make_scatter(min_th, diam)
-
-
-# 2. numerical and categorical
-
-plot_box <- function(data, catvar, numvar, ...){
-  data |> 
-    select({{catvar}}, {{numvar}}) |> 
-    tidyr::drop_na() |> 
-    ggplot(aes(x = reorder({{catvar}}, {{numvar}}), y = {{numvar}})) + 
-    geom_boxplot()+
-    theme_bw()+
-    labs(x = rlang::englue("{{catvar}}"),
-         y = rlang::englue("{{numvar}}"))
-}
-
-rims_only |> plot_box(rim_angle, diam)
-
-# 3. two categorical variables
-# it is important here to program the variable with the larger number of categories as x
-
-plot_bar_group <- function(data, x, y){
-  data |>
-    select({{x}}, {{y}}) |> 
-    tidyr::drop_na() |> 
-    ggplot(aes(x = {{ x }}, fill  = {{ y }}))+
-    geom_bar(position = "dodge")+
-    theme_bw()
-}
-
-rims_only |> plot_bar_group(rim_type, rim_angle)
+print(p)
 ```
+
+
+Do correlation tests, then order the plots according to correlation 
+
 
 ## Plots
 
@@ -351,6 +308,13 @@ rims_only |>
        subtitle = "NDK1")
 ```
 
-## Finding Groups
+## Finding Groups (Juan-Marco)
+
+## Analysing decors and motifs
+networks (J-M)
+
+
 
 ## Significance and Standardisation
+
+
