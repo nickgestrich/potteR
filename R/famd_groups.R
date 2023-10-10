@@ -14,8 +14,8 @@
 #'     \item{results_famd}{Results of FAMD analysis.}
 #'   }
 #'
-#' @importFrom tibble rownames_to_column
-#' @importFrom dplyr left_join
+#' @importFrom tibble column_to_rownames rownames_to_column
+#' @importFrom dplyr select filter rename left_join
 #' @importFrom FactoMineR FAMD HCPC
 #' @importFrom factoextra fviz_cluster
 #' @importFrom tidyr all_of everything
@@ -31,9 +31,9 @@
 #' \code{\link{factoextra::fviz_cluster}}
 #'
 #' @export
-form_groups <- function(data, column = c("diam", "rim_angle", "simple_rim_type"), graph = FALSE){
+famd_groups <- function(data, column = c("diam", "rim_angle", "simple_rim_type"), graph = FALSE){
 
-
+data <- data
   # Perform FAMD analysis
   res.famd <- data |>
     tibble::column_to_rownames("unit_id") |>
@@ -63,13 +63,13 @@ form_groups <- function(data, column = c("diam", "rim_angle", "simple_rim_type")
   data_clust <- data |>
     dplyr::left_join(data_clust)
 
-  # Create a list of results
-  form_groups <- list(complete_data = data_clust, famd_input_data = data_clust_s, results_cluster = res.hcpc, results_famd = res.famd)
+  # Create a list of dataframes and results
+  famd_groups <- list(complete_data = data_clust, famd_input_data = data_clust_s, results_cluster = res.hcpc, results_famd = res.famd)
 
   # Print the cluster plot if requested
   if(graph){
     print(plot_clust)
   } else {}
 
-  return(form_groups)
+  return(famd_groups)
 }

@@ -308,160 +308,42 @@ rims_only |>
 
 ## Simplified rims
 This function selects only the letters in front of the numbers in the rim_type. The aim is to only get a general type e.g. simple, so it is easier to categorise
+This function should probably come up earlier in the script
 ```{r}
-
+# load rim data
 rims <- guinea[[1]]
 
-# Define a function called 'add_simple_rim' that takes a data frame as input
-add_simple_rim <- function(data, column = "rim_type"){
-  
-  
-     # Enquo the columns name
-  column_name <- dplyr::ensym(column)
-  
-  # Inside the function, modify the input data frame
-  data <- data |> 
-    # Create a new column 'simple_rim_type' by applying the simplification to the specified column
-    dplyr::mutate(simple_rim_type = gsub("([0-9].*)", "", !!column_name))
-  
-  # Return the modified data frame
-  return(data)
-}
+# clean rim types
+rims <- rims |> 
+  dplyr::mutate(rim_type = dplyr::case_match(rim_type, 
+                                      c("SI", "Si") ~ "S1",
+                                      c("T1(?)", "T1...") ~ "T1",
+                                      .default = rim_type
+                                      ))
 
-
-add_simple_rim <- function(data, column = "rim_type"){
-  
-  
-  
-  # Inside the function, modify the input data frame
-  data <- data |> 
-    # Create a new column 'simple_rim_type' by applying the simplification to the specified column
-    dplyr::mutate(simple_rim_type = gsub("([0-9].*)", "", {{column}}))
-  
-  # Return the modified data frame
-  return(data)
-}
-
+#add simple rimtypes
 rims <- add_simple_rim(rims, column = "rim_type")
 
 ```
 
-## Finding Groups
 
-```{r}
-library(FactoMineR)
-library(factoextra)
-library(here)
-guinea <- load("D:/Git/potteR/data/guinea.rda")
-
-rims <- guinea[[1]]
-
-
-
-FAMD()
-
-res.hcpc <- rims |> 
-tibble::column_to_rownames("unit_id") |> 
-  select(diam, rim_angle) |> 
-filter(!if_any(everything(), is.na)) |> 
-  FAMD() |> 
-  HCPC(graph = FALSE)
-  
-  
-
-res.hcpc$data.clust
-  fviz_cluster(geom = "point", main = "Factor map", axes = c(1,2)) 
-
-
- 
-  
-res.famd <- rims |> 
-tibble::column_to_rownames("unit_id") |> 
-  select(diam, rim_angle, simple_rim_type) |> 
-filter(!if_any(everything(), is.na)) |> 
-  FAMD()
-
- res.hcpc <- HCPC(res.famd, graph = FALSE)  
-
-res.hcpc$data.clust
-
-res.hcpc <- rims |> 
-tibble::column_to_rownames("unit_id") |> 
-  select(diam, rim_angle, rim_type) |> 
-filter(!if_any(everything(), is.na)) |> 
-  FAMD() |> 
-  HCPC(graph = FALSE)  
-
-res.hcpc$data.clust
-
-
-
-```
-
+## Finding Groups based on FAMD
+The function allows to search for groups of similar vessels based on selected variables. The hierarchical clustering (results saved at[[3]]) is based on the results of a Factor Analysis of Mixed Data (results saved at[[4]]). This clustering results in a column that is added to the data (to the whole dataset [[1]] or a dataset consisting only of the variables used in the FAMD [[2]]). If graph = TRUE the graphs produced with the FAMD aswell as a visualisation of the clusters in the 1/2-dimensions of the FAMD is provided.
+In this example (which is also the default columns) diameter, rim_angle and simplified rimtypes are used to find groups of vessels based on their form.
 ```{r}
 
-rims <- add_simple_rim(rims)
 
-library(FactoMineR)
-library(factoextra)
+fg <- famd_groups(data = rims, column = c("diam", "rim_angle", "simple_rim_type"), graph = TRUE)
 
-get_first_letters <- function(input_string) {
-  words <- unlist(strsplit(input_string, " ")) # Zerlegt den String in Worte
-  first_letters <- substr(words, 1, 1) # Extrahiert den ersten Buchstaben jedes Wortes
-  result <- paste(first_letters, collapse = "") # Fügt die ersten Buchstaben zusammen
- result <- paste("clust_", result)
-  
-  return(result)
-}
-
-data <- rims
-column <- c("diam", "rim_angle", "simple_rim_type")
-graph <- FALSE
-form_groups <- function(data, column = c("diam", "rim_angle", "simple_rim_type"), graph = FALSE){
- 
-  
-  res.famd <- rims |> 
-tibble::column_to_rownames("unit_id") |> 
-  dplyr::select(tidyr::all_of(column)) |> 
-dplyr::filter(!dplyr::if_any(tidyr::everything(), is.na)) |> 
-  FactoMineR::FAMD(graph = graph)
-
-  res.hcpc <- res.famd |> 
-    FactoMineR::HCPC(graph = FALSE)  
-  
-  plot_clust <-  res.hcpc |> 
-    factoextra::fviz_cluster(geom = "point", main = "Factor map", axes = c(1,2)) 
-
-data_clust_s  <- res.hcpc$data.clust |> 
-  dplyr::rename(!!get_first_letters(column) := clust)
-
-data_clust <- data_clust_s |> 
-  tibble::rownames_to_column("unit_id") 
-
-data_clust <- data |> 
-  dplyr::left_join(data_clust)
-  
- form_groups <- list(complete_data = data_clust,famd_input_data = data_clust_s, results_cluster = res.hcpc, results_famd = res.famd)
- if(graph){
- print(plot_clust)
-}
- else{}
- return(form_groups)
-
-}
-
-
-fg <- form_groups(rims, graph = TRUE)
-
-fg <- form_groups(rims, graph = FALSE)
-
-fg <- form_groups(rims, column = c("diam", "rim_angle", "simple_rim_type", "min_th", "fir"), graph = TRUE)
-
-fg[2]
-fg[3]
-fg[4]
-
+#taking a look at the result of this function
 fg
+
+#saving the modified data
+rims_clust <- fg[[2]]
+
+#inspecting the modified data
+rims_clust |> 
+  utils::head(n = 5)
 
 ```
 

@@ -17,6 +17,6 @@ Make a barplot of categorical count data in a list
 }
 \examples{
 guinea[[1]] |>
-sum_categoricals() |>
-plot_categoricals()
+  sum_categoricals() |>
+  plot_categoricals()
 }
