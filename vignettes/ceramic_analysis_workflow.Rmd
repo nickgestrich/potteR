@@ -305,18 +305,45 @@ rims_only |>
   labs(title = "Rim Types from Unit B",
        subtitle = "NDK1")
 ```
-## simplified rims
+
+## Simplified rims
 This function selects only the letters in front of the numbers in the rim_type. The aim is to only get a general type e.g. simple, so it is easier to categorise
 ```{r}
-add_simple_rim <- function(data){
+
+rims <- guinea[[1]]
+
+# Define a function called 'add_simple_rim' that takes a data frame as input
+add_simple_rim <- function(data, column = "rim_type"){
   
   
+     # Enquo the columns name
+  column_name <- dplyr::ensym(column)
   
-data <- data |> 
-    mutate(simple_rim_type = gsub("([0-9].*)", "", rim_type))
+  # Inside the function, modify the input data frame
+  data <- data |> 
+    # Create a new column 'simple_rim_type' by applying the simplification to the specified column
+    dplyr::mutate(simple_rim_type = gsub("([0-9].*)", "", !!column_name))
   
+  # Return the modified data frame
   return(data)
-} 
+}
+
+
+add_simple_rim <- function(data, column = "rim_type"){
+  
+  
+  
+  # Inside the function, modify the input data frame
+  data <- data |> 
+    # Create a new column 'simple_rim_type' by applying the simplification to the specified column
+    dplyr::mutate(simple_rim_type = gsub("([0-9].*)", "", {{column}}))
+  
+  # Return the modified data frame
+  return(data)
+}
+
+rims <- add_simple_rim(rims, column = "rim_type")
+
 ```
 
 ## Finding Groups
@@ -372,38 +399,70 @@ res.hcpc$data.clust
 ```
 
 ```{r}
+
 rims <- add_simple_rim(rims)
 
+library(FactoMineR)
+library(factoextra)
 
-form_groups <- function(data){
+get_first_letters <- function(input_string) {
+  words <- unlist(strsplit(input_string, " ")) # Zerlegt den String in Worte
+  first_letters <- substr(words, 1, 1) # Extrahiert den ersten Buchstaben jedes Wortes
+  result <- paste(first_letters, collapse = "") # Fügt die ersten Buchstaben zusammen
+ result <- paste("clust_", result)
+  
+  return(result)
+}
+
+data <- rims
+column <- c("diam", "rim_angle", "simple_rim_type")
+graph <- FALSE
+form_groups <- function(data, column = c("diam", "rim_angle", "simple_rim_type"), graph = FALSE){
+ 
+  
   res.famd <- rims |> 
 tibble::column_to_rownames("unit_id") |> 
-  select(diam, rim_angle, simple_rim_type) |> 
-filter(!if_any(everything(), is.na)) |> 
-  FAMD()
-  
-  res.hcpc <- HCPC(res.famd, graph = FALSE)  
-  
-  plot <-  fviz_cluster(res.hcpc, geom = "point", main = "Factor map", axes = c(1,2)) 
+  dplyr::select(tidyr::all_of(column)) |> 
+dplyr::filter(!dplyr::if_any(tidyr::everything(), is.na)) |> 
+  FactoMineR::FAMD(graph = graph)
 
-data_clust_s  <- res.hcpc$data.clust 
+  res.hcpc <- res.famd |> 
+    FactoMineR::HCPC(graph = FALSE)  
+  
+  plot_clust <-  res.hcpc |> 
+    factoextra::fviz_cluster(geom = "point", main = "Factor map", axes = c(1,2)) 
+
+data_clust_s  <- res.hcpc$data.clust |> 
+  dplyr::rename(!!get_first_letters(column) := clust)
 
 data_clust <- data_clust_s |> 
   tibble::rownames_to_column("unit_id") 
 
 data_clust <- data |> 
-  left_join(data_clust)
+  dplyr::left_join(data_clust)
   
- form_groups <- list(data_clust, data_clust_s, plot, res.hcpc, res.famd)
- 
+ form_groups <- list(complete_data = data_clust,famd_input_data = data_clust_s, results_cluster = res.hcpc, results_famd = res.famd)
+ if(graph){
+ print(plot_clust)
+}
+ else{}
  return(form_groups)
- 
+
 }
 
-fg <- form_groups(rims)
+
+fg <- form_groups(rims, graph = TRUE)
+
+fg <- form_groups(rims, graph = FALSE)
+
+fg <- form_groups(rims, column = c("diam", "rim_angle", "simple_rim_type", "min_th", "fir"), graph = TRUE)
 
 fg[2]
 fg[3]
+fg[4]
+
+fg
+
 ```
 
 
