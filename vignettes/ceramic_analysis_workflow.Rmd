@@ -49,6 +49,11 @@ rim_summary <- get_summary(rims_only)
 
 # to generate a pdf report, uncomment and run the code below
 print_summary(rims_only, file = here::here("summary.pdf"))
+
+
+# NB possibly replace with the dfSummary() command from here:
+# https://htmlpreview.github.io/?https://github.com/dcomtois/summarytools/blob/master/doc/introduction.html#grouped-statistics-group_by
+# This would have to be wrapped in a markdown function to give out a nice report or print to pdf.
 ```
 
 It will often not be necessary to run these functions on the entire dataset. In that case, a selection of variables can be made first.
@@ -110,9 +115,106 @@ rims_only <- rims_only |>
                                       ))
 ```
 
-## 3. Bivariate statistics
+## 3. Splitting the data
 
-The next step in the exploratory phase of the analysis is to survey the variables for possible correlation. It is expedient to do this visually at first. The package provides a function which generates a pdf of bivariate combinations. Look at these and decide which relationships to follow up on.
+After cleaning and initial univariate checks on your data, this is probably a good stage to:
+* make some thematic splits (e.g. between variables that capture the shape, the decor, and modifications). You can combine this again later.
+* discard variables that suffer from having few or uneven observations and can therefore not be used for statistical work
+
+### Split the data into topics
+
+How you separate the data is down to your own research questions and will be informed by your expertise as a ceramic analyst.
+
+From the example data, we will make one dataset that can tell us about the shape of the vessels and one that can tell us about décor and other surface treatment. Finally, we will make one that can tell us about technical aspects of the pottery.
+
+For the shape data, we will only need variables observed on the rim sherds. We will select the opening diameter, the maximum and minimum thickness measurements, the rim angle, and the rim type, along with the variables that inform us about the id and the context of the find.
+
+```{r data splitting 1}
+shape_data <- rims_only |> select(diam, mx_th, min_th, rim_angle, rim_type, base, parts, site, sondage, context, unit_id, sond_con)
+```
+
+For the decor data, we can make two tables. One in which all surface treatment data from all sherds is placed together, and one only from rim sherds, where the decorative motifs are recorded with their location on the pot.
+
+```{r data splitting 2}
+# All decor
+all_decor_data <- all |> select(site, sondage, context, sond_con, unit_id, n_sh, surf, dec1:mot3)
+
+# Decor with location
+decor_loc_data <- rims |> select(site, sondage, context, sond_con, unit_id, dec1:l3)
+```
+
+The technical data is encoded in just a few columns
+
+```{r}
+technical_data <- all |> select(site, sondage, context, sond_con, unit_id, n_sh, col, temp, inc, fir)
+```
+
+We now have four different datasets. The following steps will be carried out one by one on each dataset. When we have successfully identified groups, we can put these different aspects of the ceramics back together to see how they relate to one another. For the sake of this demonstration, we will mainly work on the `shape_data` dataset.
+
+### Discard variables
+
+Not all variables have observations that are sufficient in number and quality to include in further analysis. You can make decisions on which variables to keep based on the univariate report, or external factors. You can also have some quantitative help by counting the number of missing values in the different columns.
+
+```{r}
+# Put this function in the R folder
+count_missing <- function(data){
+  data |> 
+  summarise(across(everything(), ~ sum(is.na(.)))) |> 
+  pivot_longer(everything(), names_to = "var", values_to = "n" ) |> 
+  mutate("%" = n/nrow(shape_data) * 100) |> 
+  arrange(desc(n))
+}  
+```
+
+
+```{r missing values}
+count_missing(shape_data)
+```
+
+In this case, the variable `base` has not been observed in 96% of cases. We should exclude this, as quantitative analysis will not be possible on this. However, we should make sure to individually describe the three bases in the assemblage. It is useful to do this straight away, as  the variable can then be excluded with a clear conscience.
+
+```{r exclude variables}
+shape_data <- shape_data |> select(-base)
+```
+
+We now have a good dataset with which to continue into statistical exploration.
+
+
+## 4. Bivariate statistics
+
+The next step in the exploratory phase of the analysis is to survey pairs of variables for possible correlation. It is expedient to do this visually at first, and then to follow up on the relationships that look promising.
+
+### Pairs of numerical variables
+The package `GGally` gives us a good tool to do this quickly for the numerical variables in the dataset.
+
+```{r}
+library(GGally)
+
+shape_data |> 
+  select(where(is.numeric)) |> 
+  drop_na() |> 
+  ggpairs() 
+```
+
+This plot gives us three elements: 
+* scatterplots of each variable pair
+* the density curve of each variable that allows us to see the distribution
+* the correlation coefficient (Pearson's r). The strength of the correlation is marked with asterisks. When there is no asterisk, there is no significant correlation.
+
+
+
+
+
+
+
+The package provides a function which generates a pdf of bivariate combinations. Look at these and decide which relationships to follow up on.
+
+
+
+
+
+
+
 
 
 ```{r}
@@ -238,10 +340,162 @@ p[[20]]
 print_2var <- function(data){}
 
 print(p)
+
+
+
+# Make a correlation heatmap
+
+library(DataExplorer)
+
+plot_correlation(na.omit(rims_only), maxcat = 5L)
+
+plot_intro(all)
+
+plot_missing(all)
+
+
+
+
+  
+```
+
+```{r}
+#rethink
+
+# we could have a scatterplot matrix to make all numeric plots into one
+
+library(GGally)
+rims_only |> 
+#select numeric varaibles and make correlation matrix  
+  select(where(is.numeric)) |> 
+  drop_na() |> 
+  ggpairs() 
+
+# the asterisks next to the correlation coefficient mark which correlations are strong
+
+
+# we ought to do the pairwise tests first to decide which relationships are worth looking at
+#select numeric variables for further use
+nums <- rims_only |> 
+  select(where(is.numeric)) |> 
+  drop_na()
+
+# make correlation matrix
+x <- cor(nums) 
+# keep only lower triangle
+x[upper.tri(x, diag = TRUE)] <- NA
+
+# put into long form for sorting
+cor_numeric <- x |>
+  as_tibble(rownames = "var1") |> 
+  pivot_longer(cols = -var1, names_to = "var2", values_to = "correlation") |> 
+  filter(!correlation == 1) |> 
+  arrange(desc(correlation))
+
+# Now for numeric/categorical
+
+# Here, make only the boxplots for visual inspection. Then, explain what to do later if a relationship should look promising.
+
+cats <- rims_only |> 
+  select(where(is.character))
+
+x <- crossing(num = names(nums), cat = names(cats))
+
+
+make_boxplot <- function(numvar, catvar){
+  ggplot(rims_only)+
+  aes(x = catvar, y = numvar)+
+  geom_boxplot()
+}
+  
+make_boxplot(diam, rim_angle)
+
+p <- vector("list", length = nrow(x)) 
+  
+for (i in 1:nrow(x)) {
+  p1 <- 
+  make_boxplot(paste0(x$num[i]), paste0(x$cat[i])
+  )
+  p[[i]] <- p1
+  
+}
+p[[1]]
+
+a <- purrr::map2(x$num, x$cat, make_boxplot)
+a[[11]]
+
+#both of these do not make the desired plot
+
+rims_only |> 
+  select(diam, mx_th, min_th, rim_angle, sondage) |> 
+  ggpairs()
+
+# We need to do an ANOVA test for this kind of thing
+
+#basic anova test:
+
+p <- vector("list", length = nrow(x)) 
+  
+for (i in 1:nrow(x)) {
+  p[[i]] <- 
+  oneway.test(x$`names(nums)`[i] ~ x$`names(cats)`[i] ,
+  data = rims_only,
+  var.equal = TRUE # assuming equal variances
+  )
+  
+}
+
+
+x$`names(nums)`[1]
+
+nrow(x)
+
+
+
+# There is a workflow here: https://statsandr.com/blog/how-to-do-a-t-test-or-anova-for-many-variables-at-once-in-r-and-communicate-the-results-in-a-better-way/
+
+library(ggstatsplot)
+library(tibble)
+
+dat <- rims_only
+
+# edit from here
+x <- "rim_angle"
+cols <- 2:4 # the 4 continuous dependent variables
+type <- "parametric" # given the large number of observations, we use the parametric version
+paired <- FALSE # FALSE for independent samples, TRUE for paired samples
+# edit until here
+
+# edit at your own risk
+plotlist <-
+  purrr::pmap(
+    .l = list(
+      data = list(as_tibble(dat)),
+      x = x,
+      y = as.list(colnames(dat)[cols]),
+      plot.type = "box", # for boxplot
+      type = type, # parametric or nonparametric
+      pairwise.comparisons = TRUE, # to run post-hoc tests if more than 2 groups
+      pairwise.display = "significant", # show only significant differences
+      bf.message = FALSE, # remove message about Bayes Factor
+      centrality.plotting = FALSE # remove central measure
+    ),
+    .f = ifelse(paired, # automatically use ggwithinstats if paired samples, ggbetweenstats otherwise
+      ggstatsplot::ggwithinstats,
+      ggstatsplot::ggbetweenstats
+    )
+  )
+
+# print all plots together with statistical results
+for (i in 1:length(plotlist)) {
+  print(plotlist[[i]])
+}
 ```
 
 
 Do correlation tests, then order the plots according to correlation 
+
+
 
 
 ## Plots

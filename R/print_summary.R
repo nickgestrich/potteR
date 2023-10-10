@@ -14,8 +14,8 @@
 #' }
 print_summary <- function(data, file) {
   cat("---
-title: \"Summary of variables`r paste(data)`\"
-date: '`r strftime(Sys.time())`'
+title: \"Summary of variables in `r paste(data)`\"
+date: \"`r strftime(Sys.time())`\"
 output:
   pdf_document
 ---
