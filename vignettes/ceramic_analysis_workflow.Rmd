@@ -90,6 +90,7 @@ The package provides a small wrapper function to replace individual
 cases.
 
 ```{r}
+# Put this function elsewhere
 replace_values <- function(data, col, old, new){
   data |> 
     dplyr::mutate({{col}} := replace({{col}}, {{col}} == old, new))
@@ -135,18 +136,15 @@ rims_only <- rims_only |>
                                       ))
 ```
 
-
 After all the data tidying is done, and has been checked, move on to the
 next step. Don't cut corners here, you won't thank yourself later.
 
 ## 3. Splitting the data
 
 After cleaning and initial univariate checks on your data, this is
-probably a good stage to: 
-\* make some thematic splits (e.g. between
+probably a good stage to: \* make some thematic splits (e.g. between
 variables that capture the shape, the decor, and modifications). You can
-combine this again later. 
-\* discard variables that suffer from having
+combine this again later. \* discard variables that suffer from having
 few or uneven observations and can therefore not be used for statistical
 work
 
@@ -230,9 +228,12 @@ We here have to separate three types of pairs, according to the types of
 variables. In our datasets, we will have numeric data (issued from
 measurements) and categorical data (issued from classifications).
 Accordingly, our pairs can be:
-\* numeric-numeric 
-\* numeric-categorical
-\* categorical-categorical
+
+-   numeric-numeric
+
+-   numeric-categorical
+
+-   categorical-categorical
 
 ### Pairs of numerical variables
 
@@ -281,14 +282,87 @@ as an example.
 
 After the visual inspection, we will now attempt to test for the
 statistical significance of these relationships using an ANOVA (Analysis
-of Variance).ANOVA is a test that needs the data to fulfill two criteria first: 
-1. the data needs to be normally distributed
-2. variances need to be equal (don't worry, this will be explained)
+of Variance).ANOVA is a test that needs the data to fulfill two criteria
+first: 1. the data needs to be normally distributed 2. variances need to
+be equal (don't worry, this will be explained)
 
-Fist, we test for normality. You might have already seen this in the univariate part and can assume it, but if you want to make statisticians happy or impress people with numbers, you can do a normality test (e.g. the Shapiro-Wilks test):
+Fist, we test for normality. You might have already seen this in the
+univariate report and can assume it, but if you want to make
+statisticians happy or impress people with numbers, you can do a
+normality test (e.g. the Shapiro-Wilks test):
 
+```{r}
+# First, run the ANOVA and save its output
+res_aov <- aov(mx_th ~ sondage,data = shape_data)
 
+# Then check for normality
+shapiro.test(res_aov$residuals)
+```
 
+If the p-value is below 0.05, the probability that the data comes from a
+normal distribution is very low, and the data is probably not normally
+distributed.
+
+If the data is not normally distributed, run a Kruskal-Wallace test. If
+it is normally distributed, run ANOVA.
+
+### Kruskal-Wallace test
+
+The Kruskal_Wallace test is run to compare three or more groups in terms
+of a quantitative variable. For only two groups, use the Mann-Whitney
+test.
+
+```{r}
+kruskal.test(mx_th ~ sondage, data = shape_data)
+```
+
+Again, we look at the p-value in the result. This tells us that at least
+one sondage is significantly different in the thickness of its pottery.
+To find out how the groups compare amongst one another, run the Dunnel
+test.
+
+```{r}
+library(FSA)
+
+dunnTest(mx_th ~ sondage,
+  data = shape_data,
+  method = "holm"
+)
+```
+
+In the resulting table, look at the adjusted P-values. This shows us
+that the difference between B and T1 is significant (below 0.05), while
+the other two pairs are not.
+
+If you want to display all of this in a single graph, use the following:
+
+```{r}
+library(ggstatsplot)
+
+ggbetweenstats(
+  data = shape_data,
+  x = sondage,
+  y = mx_th,
+  type = "nonparametric", # this selects Kruskal-Wallis over ANOVA
+  plot.type = "box",
+  pairwise.comparisons = TRUE,
+  pairwise.display = "significant",
+  centrality.plotting = FALSE,
+  bf.message = FALSE
+)
+```
+
+### ANOVA
+
+If the data is normally distributed, run an ANOVA.
+
+```{r}
+# First, run the ANOVA and save its output
+res_aov <- aov(mx_th ~ rim_angle,data = shape_data)
+
+# Then check for normality
+shapiro.test(res_aov$residuals)
+```
 
 The following function gives you all the information you might need, and
 much more.
@@ -576,8 +650,6 @@ for (i in 1:length(plotlist)) {
 ```
 
 Do correlation tests, then order the plots according to correlation
-
-
 
 ## Plots
 
