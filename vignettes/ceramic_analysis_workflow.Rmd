@@ -58,7 +58,9 @@ visualisation for each variable.
 rim_summary <- get_summary(rims_only)
 
 # to generate a pdf report, uncomment and run the code below
+
 # print_summary(rims_only, file = here::here("summary.pdf"))
+
 
 
 # NB possibly replace with the dfSummary() command from here:
@@ -133,15 +135,18 @@ rims_only <- rims_only |>
                                       ))
 ```
 
+
 After all the data tidying is done, and has been checked, move on to the
 next step. Don't cut corners here, you won't thank yourself later.
 
 ## 3. Splitting the data
 
 After cleaning and initial univariate checks on your data, this is
-probably a good stage to: \* make some thematic splits (e.g. between
+probably a good stage to: 
+\* make some thematic splits (e.g. between
 variables that capture the shape, the decor, and modifications). You can
-combine this again later. \* discard variables that suffer from having
+combine this again later. 
+\* discard variables that suffer from having
 few or uneven observations and can therefore not be used for statistical
 work
 
@@ -224,7 +229,9 @@ promising.
 We here have to separate three types of pairs, according to the types of
 variables. In our datasets, we will have numeric data (issued from
 measurements) and categorical data (issued from classifications).
-Accordingly, our pairs can be: \* numeric-numeric \* numeric-categorical
+Accordingly, our pairs can be:
+\* numeric-numeric 
+\* numeric-categorical
 \* categorical-categorical
 
 ### Pairs of numerical variables
@@ -280,9 +287,6 @@ of Variance).ANOVA is a test that needs the data to fulfill two criteria first:
 
 Fist, we test for normality. You might have already seen this in the univariate part and can assume it, but if you want to make statisticians happy or impress people with numbers, you can do a normality test (e.g. the Shapiro-Wilks test):
 
-```{r}
-
-```
 
 
 
@@ -572,6 +576,8 @@ for (i in 1:length(plotlist)) {
 ```
 
 Do correlation tests, then order the plots according to correlation
+
+
 
 ## Plots
 
