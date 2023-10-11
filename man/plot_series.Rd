@@ -2,7 +2,8 @@
 % Please edit documentation in R/plot_series.R
 \name{plot_series}
 \alias{plot_series}
-\title{a wrapper function around tabula::plot_ford() in order to ease data preparation.}
+\title{a wrapper function around tabula::plot_ford() in order to ease data
+preparation}
 \usage{
 plot_series(data, context_var, attribute_var, context_order)
 }
@@ -13,13 +14,15 @@ plot_series(data, context_var, attribute_var, context_order)
 
 \item{attribute_var}{The attribute that is the target for assessing seriation}
 
-\item{context_order}{A vector giving the predefined order for the values in context_var}
+\item{context_order}{A vector giving the predefined order for the values in
+context_var}
 }
 \value{
 A ggplot object
 }
 \description{
-a wrapper function around tabula::plot_ford() in order to ease data preparation.
+a wrapper function around tabula::plot_ford() in order to ease data
+preparation
 }
 \examples{
 order <- as.character(c(1:26))
