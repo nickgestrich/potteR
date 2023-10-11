@@ -19,6 +19,6 @@ Generate a pdf report on all the variables in a dataset
 }
 \examples{
 \dontrun{
-guinea[[3]] |>  print_summary(file = here::here("summary.pdf"))
+guinea[[3]] |> print_summary(file = here::here("summary.pdf"))
 }
 }
