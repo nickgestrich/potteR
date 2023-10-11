@@ -8,10 +8,11 @@
 #' @return A data frame with numbers removed from the specified column.
 #'
 #' @importFrom dplyr mutate
+#' @importFrom ggplot2 ensym
 #'
 #' @examples
 #' \dontrun{
-#' data <- data.frame(Name = c("John123", "Alice456", "Bob789"))
+#' data <- data.frame(Name = c("T1c", "S9", "S2"))
 #' modified_data <- remove_numbers(data, Name)
 #' }
 #'

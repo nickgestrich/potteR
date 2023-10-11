@@ -6,8 +6,6 @@
 #'
 #' @return A character string with the first letters of words combined with "clust_" prefix.
 #'
-#' @importFrom base paste substr
-#' @importFrom utils strsplit unlist
 #'
 #' @examples
 #' get_first_letters("Hello World") # Returns "clust_HW"

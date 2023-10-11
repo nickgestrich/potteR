@@ -19,7 +19,7 @@ This function takes a data frame and the name of a column as input. It removes n
 }
 \examples{
 \dontrun{
-data <- data.frame(Name = c("John123", "Alice456", "Bob789"))
+data <- data.frame(Name = c("T1c", "S9", "S2"))
 modified_data <- remove_numbers(data, Name)
 }
 
