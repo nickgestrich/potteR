@@ -147,10 +147,47 @@ rims_only |>
        subtitle = "NDK1")
 ```
 
-## Finding Groups (Juan-Marco)
 
-## Analysing decors and motifs
-networks (J-M)
+## Simplified rims (PS)
+This function selects only the letters in front of the numbers in the rim_type. The aim is to only get a general type e.g. simple, so it is easier to categorise
+This function should probably come up earlier in the script
+```{r}
+# load rim data
+rims <- guinea[[1]]
+
+# clean rim types
+rims <- rims |> 
+  dplyr::mutate(rim_type = dplyr::case_match(rim_type, 
+                                      c("SI", "Si") ~ "S1",
+                                      c("T1(?)", "T1...") ~ "T1",
+                                      .default = rim_type
+                                      ))
+
+#add simple rimtypes
+rims <- add_simple_rim(rims, column = "rim_type")
+
+```
+
+
+## Finding Groups based on FAMD (PS)
+The function allows to search for groups of similar vessels based on selected variables. The hierarchical clustering (results saved at[[3]]) is based on the results of a Factor Analysis of Mixed Data (results saved at[[4]]). This clustering results in a column that is added to the data (to the whole dataset [[1]] or a dataset consisting only of the variables used in the FAMD [[2]]). If graph = TRUE the graphs produced with the FAMD aswell as a visualisation of the clusters in the 1/2-dimensions of the FAMD is provided.
+In this example (which is also the default columns) diameter, rim_angle and simplified rimtypes are used to find groups of vessels based on their form.
+```{r}
+
+
+fg <- famd_groups(data = rims, column = c("diam", "rim_angle", "simple_rim_type"), graph = TRUE)
+
+#taking a look at the result of this function
+fg
+
+#saving the modified data
+rims_clust <- fg[[2]]
+
+#inspecting the modified data
+rims_clust |> 
+  utils::head(n = 5)
+
+```
 
 
 
