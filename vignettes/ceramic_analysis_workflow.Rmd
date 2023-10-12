@@ -48,7 +48,7 @@ We begin our explorative data analysis with a report of summary statistics and c
 rim_summary <- get_summary(rims_only)
 
 # to generate a pdf report, uncomment and run the code below
-print_summary(rims_only, file = here::here("summary.pdf"))
+#print_summary(rims_only, file = here::here("summary.pdf"))
 ```
 
 It will often not be necessary to run these functions on the entire dataset. In that case, a selection of variables can be made first.

@@ -1,7 +1,7 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# potteR
+# potR
 
 <!-- badges: start -->
 <!-- badges: end -->
