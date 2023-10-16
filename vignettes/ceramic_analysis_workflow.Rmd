@@ -1,5 +1,5 @@
 ---
-title: "Example workflow for ceramic analysis using potteR"
+title: "Example workflow for ceramic analysis using potR"
 author: "Nick Gestrich"
 output: rmarkdown::html_vignette
 vignette: >
@@ -15,7 +15,14 @@ knitr::opts_chunk$set(
 )
 ```
 
-```{r setup}
+```{r, include=FALSE}
+# delete before publication
+library(devtools)
+load_all()
+```
+
+
+```{r setup, warning=FALSE, message=FALSE}
 library(potteR)
 library(dplyr)
 library(tidyr)
@@ -187,6 +194,14 @@ rims_clust <- fg[[2]]
 rims_clust |> 
   utils::head(n = 5)
 
+```
+```{r}
+fg[[1]] <- fg[[1]] |> rename(clust_drs = `clust_ drs`)
+
+fg[[1]] |> 
+  as_tibble() |>
+  filter(sondage == "B") |> # select only Unit B
+  plot_series(context, clust_drs, b_order)
 ```
 
 
