@@ -1,0 +1,28 @@
+---
+title: "Summary of variables in `r paste(data)`"
+date: "`r strftime(Sys.time())`"
+output:
+  pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, cache = TRUE)
+```
+
+
+```{r example, results='asis'}
+
+library(patchwork)
+
+l <- potteR::plot_summary(data)
+x <- potteR::get_summary(data)
+
+out <- vector('list', length = length(l))
+
+for(i in seq_along(l)) {
+out[[i]] <-
+l[[i]] + gridExtra::tableGrob(x[[i]] |> dplyr::slice_head(n = 15), rows = NULL)
+}
+
+out
+```
