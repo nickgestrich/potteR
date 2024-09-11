@@ -258,16 +258,21 @@ shape_data |>
   ggpairs() 
 ```
 
-This plot gives us three elements: \* scatterplots of each variable pair
-\* the density curve of each variable that allows us to see the
-distribution \* the correlation coefficient (Pearson's r). The strength
-of the correlation is marked with asterisks. When there is no asterisk,
-there is no significant correlation.
+This plot gives us three elements:
+
+-   scatterplots of each variable pair
+
+-   the density curve of each variable that allows us to see the
+    distribution
+
+-   the correlation coefficient (Pearson's r). The strength of the
+    correlation is marked with asterisks. When there is no asterisk,
+    there is no significant correlation.
 
 ### Numeric - categorical pairs
 
 For pairs of numeric and categorical data, the first step is to create a
-series of boxplots.These will allow you to perform visual checks to see
+series of boxplots. These will allow you to perform visual checks to see
 how the data is distributed and whether there might be a relationship.
 
 ```{r}
@@ -277,7 +282,7 @@ how the data is distributed and whether there might be a relationship.
 boxplots <- all_boxplots(shape_data)
 
 # to see all of them, uncomment and run the following command:
-print(boxplots)
+#print(boxplots)
 
 # to see any single one, use its number 
 boxplots[[21]]
