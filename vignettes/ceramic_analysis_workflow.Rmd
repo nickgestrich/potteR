@@ -18,6 +18,12 @@ knitr::opts_chunk$set(
 )
 ```
 
+```{r}
+library(devtools)
+load_all()
+```
+
+
 ```{r setup}
 library(potteR)
 library(dplyr)
@@ -526,154 +532,154 @@ on.
 ```
 
 ```{r}
-#rethink
-
-
-
-
-# we ought to do the pairwise tests first to decide which relationships are worth looking at
-#select numeric variables for further use
-nums <- rims_only |> 
-  select(where(is.numeric)) |> 
-  drop_na()
-
-# make correlation matrix
-x <- cor(nums) 
-# keep only lower triangle
-x[upper.tri(x, diag = TRUE)] <- NA
-
-# put into long form for sorting
-cor_numeric <- x |>
-  as_tibble(rownames = "var1") |> 
-  pivot_longer(cols = -var1, names_to = "var2", values_to = "correlation") |> 
-  filter(!correlation == 1) |> 
-  arrange(desc(correlation))
-
-# Now for numeric/categorical
-
-# Here, make only the boxplots for visual inspection. Then, explain what to do later if a relationship should look promising.
-
-cats <- rims_only |> 
-  select(where(is.character))
-
-x <- crossing(num = names(nums), cat = names(cats))
-
-
-make_boxplot <- function(numvar, catvar){
-  ggplot(rims_only)+
-  aes(x = catvar, y = numvar)+
-  geom_boxplot()
-}
-  
-make_boxplot(diam, rim_angle)
-
-p <- vector("list", length = nrow(x)) 
-  
-for (i in 1:nrow(x)) {
-  p1 <- 
-  make_boxplot(paste0(x$num[i]), paste0(x$cat[i])
-  )
-  p[[i]] <- p1
-  
-}
-p[[1]]
-
-a <- purrr::map2(x$num, x$cat, make_boxplot)
-a[[11]]
-
-#both of these do not make the desired plot
-
-rims_only |> 
-  select(diam, mx_th, min_th, rim_angle, sondage) |> 
-  ggpairs()
-
-# We need to do an ANOVA test for this kind of thing
-
-#basic anova test:
-
-p <- vector("list", length = nrow(x)) 
-  
-for (i in 1:nrow(x)) {
-  p[[i]] <- 
-  oneway.test(x$`names(nums)`[i] ~ x$`names(cats)`[i] ,
-  data = rims_only,
-  var.equal = TRUE # assuming equal variances
-  )
-  
-}
-
-
-x$`names(nums)`[1]
-
-nrow(x)
-
-
-
-# There is a workflow here: https://statsandr.com/blog/how-to-do-a-t-test-or-anova-for-many-variables-at-once-in-r-and-communicate-the-results-in-a-better-way/
-
-library(ggstatsplot)
-library(tibble)
-
-dat <- rims_only
-
-# edit from here
-x <- "rim_angle"
-cols <- 2:4 # the 4 continuous dependent variables
-type <- "parametric" # given the large number of observations, we use the parametric version
-paired <- FALSE # FALSE for independent samples, TRUE for paired samples
-# edit until here
-
-# edit at your own risk
-plotlist <-
-  purrr::pmap(
-    .l = list(
-      data = list(as_tibble(dat)),
-      x = x,
-      y = as.list(colnames(dat)[cols]),
-      plot.type = "box", # for boxplot
-      type = type, # parametric or nonparametric
-      pairwise.comparisons = TRUE, # to run post-hoc tests if more than 2 groups
-      pairwise.display = "significant", # show only significant differences
-      bf.message = FALSE, # remove message about Bayes Factor
-      centrality.plotting = FALSE # remove central measure
-    ),
-    .f = ifelse(paired, # automatically use ggwithinstats if paired samples, ggbetweenstats otherwise
-      ggstatsplot::ggwithinstats,
-      ggstatsplot::ggbetweenstats
-    )
-  )
-
-# print all plots together with statistical results
-for (i in 1:length(plotlist)) {
-  print(plotlist[[i]])
-}
-```
-
-Do correlation tests, then order the plots according to correlation
-
-## Plots
-
-We provide a ggplot theme for fast and unified styling of graphics.
-
-```{r}
-ggplot(rims) +
-  geom_point(aes(x = diam, y = mx_th, colour = sondage)) +
-  theme_potteR()
-
-```
-
-```{r}
-ggplot(rims) +
-  geom_boxplot(aes(x = sondage, y = mx_th, fill = sondage)) +
-  params_potteR
-
-params_potteR <- list(ggplot2::theme_bw(), 
-                      khroma::scale_colour_bright())
-theme_potteR <- function() {
-  ggplot2::theme_bw()+
-  khroma::scale_colour_bright()
-}
-  
+##rethink
+#
+#
+#
+#
+## we ought to do the pairwise tests first to decide which #relationships are worth looking at
+##select numeric variables for further use
+#nums <- rims_only |> 
+#  select(where(is.numeric)) |> 
+#  drop_na()
+#
+## make correlation matrix
+#x <- cor(nums) 
+## keep only lower triangle
+#x[upper.tri(x, diag = TRUE)] <- NA
+#
+## put into long form for sorting
+#cor_numeric <- x |>
+#  as_tibble(rownames = "var1") |> 
+#  pivot_longer(cols = -var1, names_to = "var2", values_to = #"correlation") |> 
+#  filter(!correlation == 1) |> 
+#  arrange(desc(correlation))
+#
+## Now for numeric/categorical
+#
+## Here, make only the boxplots for visual inspection. Then, #explain what to do later if a relationship should look promising.
+#
+#cats <- rims_only |> 
+#  select(where(is.character))
+#
+#x <- crossing(num = names(nums), cat = names(cats))
+#
+#
+#make_boxplot <- function(numvar, catvar){
+#  ggplot(rims_only)+
+#  aes(x = catvar, y = numvar)+
+#  geom_boxplot()
+#}
+#  
+#make_boxplot(diam, rim_angle)
+#
+#p <- vector("list", length = nrow(x)) 
+#  
+#for (i in 1:nrow(x)) {
+#  p1 <- 
+#  make_boxplot(paste0(x$num[i]), paste0(x$cat[i])
+#  )
+#  p[[i]] <- p1
+#  
+#}
+#p[[1]]
+#
+#a <- purrr::map2(x$num, x$cat, make_boxplot)
+#a[[11]]
+#
+##both of these do not make the desired plot
+#
+#rims_only |> 
+#  select(diam, mx_th, min_th, rim_angle, sondage) |> 
+#  ggpairs()
+#
+## We need to do an ANOVA test for this kind of thing
+#
+##basic anova test:
+#
+#p <- vector("list", length = nrow(x)) 
+#  
+#for (i in 1:nrow(x)) {
+#  p[[i]] <- 
+#  oneway.test(x$`names(nums)`[i] ~ x$`names(cats)`[i] ,
+#  data = rims_only,
+#  var.equal = TRUE # assuming equal variances
+#  )
+#  
+#}
+#
+#
+#x$`names(nums)`[1]
+#
+#nrow(x)
+#
+#
+#
+## There is a workflow here: #https://statsandr.com/blog/how-to-do-a-t-test-or-anova-for-many-va#riables-at-once-in-r-and-communicate-the-results-in-a-better-way/
+#
+#library(ggstatsplot)
+#library(tibble)
+#
+#dat <- rims_only
+#
+## edit from here
+#x <- "rim_angle"
+#cols <- 2:4 # the 4 continuous dependent variables
+#type <- "parametric" # given the large number of observations, we #use the parametric version
+#paired <- FALSE # FALSE for independent samples, TRUE for paired #samples
+## edit until here
+#
+## edit at your own risk
+#plotlist <-
+#  purrr::pmap(
+#    .l = list(
+#      data = list(as_tibble(dat)),
+#      x = x,
+#      y = as.list(colnames(dat)[cols]),
+#      plot.type = "box", # for boxplot
+#      type = type, # parametric or nonparametric
+#      pairwise.comparisons = TRUE, # to run post-hoc tests if more #than 2 groups
+#      pairwise.display = "significant", # show only significant #differences
+#      bf.message = FALSE, # remove message about Bayes Factor
+#      centrality.plotting = FALSE # remove central measure
+#    ),
+#    .f = ifelse(paired, # automatically use ggwithinstats if #paired samples, ggbetweenstats otherwise
+#      ggstatsplot::ggwithinstats,
+#      ggstatsplot::ggbetweenstats
+#    )
+#  )
+#
+## print all plots together with statistical results
+#for (i in 1:length(plotlist)) {
+#  print(plotlist[[i]])
+#}
+#```
+#
+#Do correlation tests, then order the plots according to #correlation
+#
+### Plots
+#
+#We provide a ggplot theme for fast and unified styling of #graphics.
+#
+#```{r}
+#ggplot(rims) +
+#  geom_point(aes(x = diam, y = mx_th, colour = sondage)) +
+#  theme_potteR()
+#
+#```
+#
+#```{r}
+#ggplot(rims) +
+#  geom_boxplot(aes(x = sondage, y = mx_th, fill = sondage)) +
+#  params_potteR
+#
+#params_potteR <- list(ggplot2::theme_bw(), 
+#                      khroma::scale_colour_bright())
+#theme_potteR <- function() {
+#  ggplot2::theme_bw()+
+#  khroma::scale_colour_bright()
+#}
+#  
 ```
 
 ## Maps
