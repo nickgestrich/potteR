@@ -19,18 +19,12 @@ knitr::opts_chunk$set(
 ```
 
 ```{r}
-<<<<<<< HEAD
-=======
 ## REMOVE after dev
->>>>>>> 477ca2324d156a50cc075845c768f92644aad909
 library(devtools)
 load_all()
 ```
 
-<<<<<<< HEAD
 
-=======
->>>>>>> 477ca2324d156a50cc075845c768f92644aad909
 ```{r setup}
 library(potteR)
 library(dplyr)
