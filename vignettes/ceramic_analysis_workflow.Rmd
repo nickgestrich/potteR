@@ -19,11 +19,18 @@ knitr::opts_chunk$set(
 ```
 
 ```{r}
+<<<<<<< HEAD
+=======
+## REMOVE after dev
+>>>>>>> 477ca2324d156a50cc075845c768f92644aad909
 library(devtools)
 load_all()
 ```
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 477ca2324d156a50cc075845c768f92644aad909
 ```{r setup}
 library(potteR)
 library(dplyr)
@@ -71,6 +78,9 @@ rim_summary <- get_summary(rims_only)
 
 # NB possibly replace with the dfSummary() command from here:
 # https://htmlpreview.github.io/?https://github.com/dcomtois/summarytools/blob/master/doc/introduction.html#grouped-statistics-group_by
+
+library(summarytools)
+view(dfSummary(rims))
 # This would have to be wrapped in a markdown function to give out a nice report or print to pdf.
 ```
 
@@ -255,16 +265,21 @@ shape_data |>
   ggpairs() 
 ```
 
-This plot gives us three elements: \* scatterplots of each variable pair
-\* the density curve of each variable that allows us to see the
-distribution \* the correlation coefficient (Pearson's r). The strength
-of the correlation is marked with asterisks. When there is no asterisk,
-there is no significant correlation.
+This plot gives us three elements:
+
+-   scatterplots of each variable pair
+
+-   the density curve of each variable that allows us to see the
+    distribution
+
+-   the correlation coefficient (Pearson's r). The strength of the
+    correlation is marked with asterisks. When there is no asterisk,
+    there is no significant correlation.
 
 ### Numeric - categorical pairs
 
 For pairs of numeric and categorical data, the first step is to create a
-series of boxplots.These will allow you to perform visual checks to see
+series of boxplots. These will allow you to perform visual checks to see
 how the data is distributed and whether there might be a relationship.
 
 ```{r}
@@ -274,7 +289,7 @@ how the data is distributed and whether there might be a relationship.
 boxplots <- all_boxplots(shape_data)
 
 # to see all of them, uncomment and run the following command:
-# print(boxplots)
+#print(boxplots)
 
 # to see any single one, use its number 
 boxplots[[21]]
@@ -723,6 +738,35 @@ rims_only |>
   plot_series(context, rim_type, b_order) +
   labs(title = "Rim Types from Unit B",
        subtitle = "NDK1")
+```
+
+### Temporal development of decors
+
+```{r}
+#split all three decor columns off into separate dfs
+dec1 <- all_decor_data |> 
+  select(sondage, context, dec1) |> 
+  rename(dec = dec1)
+
+dec2 <- all_decor_data |> 
+  select(sondage, context, dec2) |> 
+  rename(dec = dec2)
+
+dec3 <- all_decor_data |> 
+  select(sondage, context, dec3) |> 
+  rename(dec = dec3)
+
+decors <- bind_rows(dec1,dec2,dec3) |> 
+  drop_na()
+
+#seriate for B
+decors |> 
+  filter(sondage == "B") |> # select only Unit B
+  filter(!dec == "ERODE") |> 
+  plot_series(context, dec, b_order)+
+  labs(title = "Decors from Unit B",
+       subtitle = "NDK1, combined body and rim sherds",
+       caption = "n=484")
 ```
 
 ## Finding Groups (Juan-Marco)
