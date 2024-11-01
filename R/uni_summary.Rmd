@@ -1,0 +1,30 @@
+---
+title: "Summary of variables"
+date: "`r paste(params$date)`"
+params:
+  date: !r Sys.Date()
+  data: NULL
+  envir: globalenv()
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, cache = TRUE)
+```
+
+```{r example, results='asis'}
+library(patchwork)
+
+l <- potteR::plot_summary(params$data)
+x <- potteR::get_summary(params$data)
+
+out <- vector('list', length = length(l))
+
+for(i in seq_along(l)) {
+out[[i]] <-
+l[[i]] / gridExtra::tableGrob(x[[i]] |> dplyr::slice_head(n = 10), rows = NULL)
+}
+
+out
+```
+

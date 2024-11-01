@@ -1,0 +1,690 @@
+---
+title: "Analysis of pottery from NDK1, Guinea"
+author: "Nikolas Gestrich"
+format: html
+editor: visual
+---
+
+## Package loading
+
+```{r}
+## REMOVE after dev
+library(devtools)
+load_all()
+```
+
+```{r setup}
+library(potteR)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+```
+
+## Data loading
+
+```{r}
+rims <- guinea[[1]]
+body <- guinea[[2]]
+
+#some of the observations on rims are not made on body sherds. We will treat these observations separately
+allsherds <- guinea[[3]]
+
+r <- names(rims)[! names(rims) %in% names(body)]
+
+rims_only <- rims |> 
+  select(all_of(r), site, sondage, context, unit_id, sond_con)
+```
+
+## Data cleaning
+
+rim angle 43
+
+sondage change T to T1
+
+surf b \>B
+
+fir i\>I
+
+dec3 Si\>SI, Si3\>SI3
+
+```{r}
+# Put this function elsewhere
+replace_values <- function(data, col, old, new){
+  data |> 
+    dplyr::mutate({{col}} := replace({{col}}, {{col}} == old, new))
+}
+
+rims_only <- rims_only |> 
+  replace_values(rim_angle, 43, 4) |> 
+  replace_values(sondage, "T", "T1")
+
+allsherds <- allsherds |> 
+  replace_values(surf, "b", "B") |> 
+  replace_values(fir, "i", "I") |> 
+  replace_values(dec3, "Si", "SI") |> 
+  replace_values(dec3, "Si3", "SI3") |> 
+  replace_values(dec3, "P43", "PA3") |> 
+  replace_values(sondage, "T", "T1")
+
+```
+
+## Univariate summary statistics
+
+We begin our explorative data analysis with a report of summary statistics and counts of each variable. This means counts of unique values in the categorical variables, and summaries of the numeric variables. PotteR provides these as an R object in a list, and as a pdf report for perusal outside of R. The pdf version also includes a basic visualisation for each variable.
+
+```{r}
+# make a list of summaries for every variable
+all_summary <- get_summary(allsherds)
+
+# to generate a pdf report, uncomment and run the code below
+
+ print_summary(allsherds, file = here::here("all_summary.pdf"))
+ 
+# make a list of summaries for every variable
+rim_summary <- get_summary(rims_only)
+
+# to generate a pdf report, uncomment and run the code below
+
+ print_summary(rims_only, file = here::here("rim_summary.pdf"))
+```
+
+## Temporal control
+
+In order to make for easier understanding of temporal developments, there are a number of contexts that need to be excluded due to uncertain stratigraphy or dating. We will also sort the data to reflect three phases as given in the stratigraphy: early, main and late.
+
+late: Unit B 2-9
+
+main: Unit B 15-25, most of the T1 stratigraphy, i.e. 2-17
+
+early: Unit B 26
+
+excluded: surface clearance contexts B1 and T1, most of the root distrubed middle horizon of Unit B, i.e. Levels 10-14. Due to their dated nature Levels 15 and 16 have been included in the main category with the lower Horizon.
+
+```{r}
+ allsherds <- allsherds |> 
+   mutate(context = as.numeric(context)) |>  
+   mutate(period = case_when(
+    sondage == "B" & context >= 2 & context <= 9 ~ "late",
+    sondage == "B" & context >= 15 & context <= 25 ~ "main",
+    sondage == "T1" & context >= 2 & context <= 17 ~ "main",
+    sondage == "B" & context == 26 ~ "early",
+    TRUE ~ NA_character_  # Handles any other cases
+  )) |> 
+   mutate(context = as.character(context))
+ 
+ rims_only <- rims_only |> 
+   mutate(context = as.numeric(context)) |> 
+   mutate(period = case_when(
+    sondage == "B" & context >= 2 & context <= 9 ~ "late",
+    sondage == "B" & context >= 15 & context <= 25 ~ "main",
+    sondage == "T1" & context >= 2 & context <= 17 ~ "main",
+    sondage == "B" & context == 26 ~ "early",
+    TRUE ~ NA_character_  # Handles any other cases
+  ))|> 
+   mutate(context = as.character(context))
+```
+
+```{r}
+plot_bar <- function(data, x, title = NULL, x_label = NULL){
+  ggplot(data, aes(x = {{ x }})) +
+    geom_bar()+
+    labs(title = title,
+         x = x_label %||% as_name(enquo(x))) +
+    theme_minimal()
+}
+
+allsherds |> drop_na(period) |> plot_bar(period)
+```
+
+## Split the data into topics
+
+We will make one dataset that can tell us about the shape of the vessels and one that can tell us about décor and other surface treatment. Finally, we will make one that can tell us about technical aspects of the pottery.
+
+For the shape data, we will only need variables observed on the rim sherds. We will select the opening diameter, the maximum and minimum thickness measurements, the rim angle, and the rim type, along with the variables that inform us about the id and the context of the find.
+
+```{r data splitting 1}
+shape_data <- rims_only |> select(diam, mx_th, min_th, rim_angle, rim_type, base, parts, site, sondage, context, unit_id, sond_con, period)
+```
+
+For the decor data, we can make two tables. One in which all surface treatment data from all sherds is placed together, and one only from rim sherds, where the decorative motifs are recorded with their location on the pot.
+
+```{r data splitting 2}
+all_decor_data <- allsherds |> select(site, sondage, context, sond_con, period, unit_id, n_sh, surf, dec1:mot3)
+```
+
+The technical data is encoded in just a few columns
+
+```{r}
+technical_data <- allsherds |> select(site, sondage, context, sond_con, period, unit_id, n_sh, col, temp, inc, fir)
+```
+
+## Technical aspects of pottery production
+
+From the univariate summaries, we can already state some key statistics. We will now augment these and look for any temporal or spatial trends.
+
+### Tempering and inclusions
+
+```{r}
+plot_stacked_bar <- function(data, var_names) {
+  # Convert the data to long format for ggplot
+  long_data <- data %>%
+    pivot_longer(cols = all_of(var_names), names_to = "variable", values_to = "category") %>%
+    group_by(variable, category) %>%
+    summarise(count = n(), .groups = 'drop') %>%
+    mutate(percentage = count / sum(count) * 100) %>%  # Calculate percentage
+    arrange(variable, percentage) %>%
+    mutate(category = factor(category, levels = unique(category)))
+
+  # Create the horizontal stacked bar plot
+  ggplot(long_data, aes(x = variable, y = count, fill = category)) +
+    geom_bar(stat = "identity", position = "fill") +  # Fill bars with black
+    coord_flip() +  # Flip the coordinates for horizontal bars
+    labs(title = "Stacked Bar Plot of Categorical Variables",
+         x = "Variables",
+         y = "Proportion") +
+    scale_y_continuous(labels = scales::percent) +  # Convert y-axis to percentage
+    theme_minimal() +
+    theme(legend.position = "none") +  # Remove the legend
+    geom_text(data = filter(long_data, percentage > 5), 
+              aes(label = category), 
+              position = position_fill(vjust = 0.4), 
+              size = 3.5)  # Label categories for those over 7% prevalence
+}
+plot_stacked_bar(allsherds, c("temp", "inc"))
+```
+
+Here we can see that the main temper is mineral in nature, specifically using a mixture of grog and small laterite rock inclusions. Organic tempering is virtually absent.
+
+### Firing
+
+```{r}
+allsherds |> plot_stacked_bar("fir")
+```
+
+Firing is uneven, a typical property of bonfire productions, in which oxydising and reducing environments are not easily controlled by the potter.
+
+```{r}
+create_boxplot <- function(data, x, y, title = "Boxplot", x_label = NULL, y_label = NULL) {
+  # Create the boxplot
+  ggplot(data, aes(x = {{ x }}, y = {{ y }})) +
+    geom_boxplot() +
+    labs(title = title,
+         x = x_label %||% as_name(enquo(x)),
+         y = y_label %||% as_name(enquo(y))) +
+    theme_minimal()
+}
+```
+
+```{r}
+technical_data %>%
+  drop_na(period) |> 
+  group_by(temp, period) |> 
+  summarise(count = n(), .groups = 'drop') |> 
+
+ggplot( aes(x = period, y = count, fill = temp)) +
+  geom_bar(stat = "identity", position = "fill") +  # Use dodge for side-by-side bars
+  labs(title = "Temper type",
+       x = "period",
+       y = "Count",
+       fill = "Temper") +
+  coord_flip()+
+  theme_minimal()
+```
+
+```{r}
+technical_data %>%
+  drop_na(period) |> 
+  group_by(inc, period) |> 
+  summarise(count = n(), .groups = 'drop') |> 
+
+# Create a bar plot of the counts
+ggplot( aes(x = period, y = count, fill = inc)) +
+  geom_bar(stat = "identity", position = "fill") +  # Use dodge for side-by-side bars
+  labs(title = "inclusion type",
+       x = "period",
+       y = "Count",
+       fill = "inclusions") +
+  coord_flip()+
+  theme_minimal()
+```
+
+There are no temporal trends visible in the technical data.
+
+## Decorative aspects
+
+We will now try to see whether there are trends in the decor, and what the main decor categories are.
+
+```{r}
+dec <- all_decor_data |> 
+  select(period, dec1, dec2, dec3)|> 
+  pivot_longer(cols = c(dec1, dec2, dec3), 
+               names_to = "variable", 
+               values_to = "decor") |> 
+  select(-variable) |>
+  drop_na(decor) 
+
+dec |> 
+  count(decor) |> 
+  mutate("%" = (n/484)*100) |> 
+  arrange(desc(n))
+```
+
+The most common decor is the impression of a woven fibre mat that occurs on 76 sherds (16% of the assemblage).
+
+```{r}
+dec |>
+  drop_na(period) |> 
+  group_by(decor, period) |> 
+  summarise(n = n()) |> 
+  ggplot( aes(x = period, y = n, fill = decor)) +
+  geom_bar(stat = "identity", position = "fill") +  # Use dodge for side-by-side bars
+  labs(title = "Decor by period",
+       x = "Period",
+       y = "Count",
+       fill = "decor") +
+  coord_flip()+
+  theme_minimal()
+```
+
+While the main and late assemblages are quite similar in their pottery, the early assemblage is notably missing the mat impressions. While much of the small assemblage is eroded, it preserves only wooden roulettes and cord impressions that were unidentifiable due to the eroded surfaces.
+
+Slip
+
+```{r}
+all_decor_data |> 
+  drop_na(period) |> 
+  group_by(surf, period) |> 
+  summarise (n = n()) |> 
+  ggplot( aes(x = period, y = n, fill = surf)) +
+  geom_bar(stat = "identity", position = "fill") +  # Use dodge for side-by-side bars
+  labs(title = "Surface treatment by period",
+       x = "Period",
+       y = "Count",
+       fill = "treatment") +
+  coord_flip()+
+  theme_minimal()
+```
+
+the early assemblage is mostly plain, with some smoothing visible on the sherds. Slip is restricted to the main assemblage. For the moment, therefore, slip can count as an indicator of the main assemblage period (cf Gokee's facies medieval - though it is not medieval). The absence of it, however, does not indicate a later date.
+
+## Shape aspects
+
+### Discard variables
+
+Not all variables have observations that are sufficient in number and quality to include in further analysis. You can make decisions on which variables to keep based on the univariate report, or external factors. You can also have some quantitative help by counting the number of missing values in the different columns.
+
+```{r missing values}
+count_missing(shape_data)
+```
+
+In this case, the variable `base` has not been observed in 96% of cases. We should exclude this, as quantitative analysis will not be possible on this. However, we should make sure to individually describe the three bases in the assemblage. It is useful to do this straight away, as the variable can then be excluded with a clear conscience.
+
+```{r exclude variables}
+shape_data <- shape_data |> select(-base)
+```
+
+We now have a good dataset with which to continue into statistical exploration.
+
+### Calculate rim class variable
+
+Rims have been coded to reflect a fine typology. While this is essential, we occasionally need a rougher approach and therefore extract a variable containing the rim class.
+
+```{r}
+library(stringr)
+shape_data <- shape_data |> mutate(rim_class = str_extract(rim_type, "[[:alpha:]]+(?=\\d)"))
+```
+
+## 4. Bivariate statistics
+
+The next step in the exploratory phase of the analysis is to survey pairs of variables for possible correlation. It is expedient to do this visually at first, and then to follow up on the relationships that look promising.
+
+We here have to separate three types of pairs, according to the types of variables. In our datasets, we will have numeric data (issued from measurements) and categorical data (issued from classifications). Accordingly, our pairs can be:
+
+-   numeric-numeric
+
+-   numeric-categorical
+
+-   categorical-categorical
+
+### Pairs of numerical variables
+
+The package `GGally` gives us a good tool to do this quickly for the numerical variables in the dataset.
+
+```{r}
+library(GGally)
+
+shape_data |> 
+  select(where(is.numeric)) |> #select only numeric variables 
+  drop_na() |> # exclude rows with missing values
+  ggpairs() 
+```
+
+This plot gives us three elements:
+
+-   scatterplots of each variable pair
+
+-   the density curve of each variable that allows us to see the distribution
+
+-   the correlation coefficient (Pearson's r). The strength of the correlation is marked with asterisks. When there is no asterisk, there is no significant correlation.
+
+-   We see that the measurements are reasonable well correlated.
+
+-   A group of larger diameter pots might be visible
+
+### Numeric - categorical pairs
+
+For pairs of numeric and categorical data, the first step is to create a series of boxplots.These will allow you to perform visual checks to see how the data is distributed and whether there might be a relationship.
+
+```{r}
+# The function "all_boxplots" will give you a list object
+# with a boxplot for each numeric-categorical combination.
+# We save it here as an object called 'boxplots'.
+boxplots <- all_boxplots(shape_data)
+
+# to see all of them, uncomment and run the following command:
+print(boxplots)
+
+# to see any single one, use its number 
+boxplots[[21]]
+```
+
+#### Statistical significance tests for pairwise relations
+
+Plot 21, for instance, suggests that there is a difference between the maximum thicknesses of the rims in the different sondages (the excavation units). Since the units tested different parts of the site, this is a potentially interesting relationship, and we will follow it up as an example.
+
+After the visual inspection, we will now attempt to test for the statistical significance of these relationships using an ANOVA (Analysis of Variance).ANOVA is a test that needs the data to fulfill two criteria first:
+
+1.  the data needs to be normally distributed
+
+2.  variances need to be equal (don't worry, this will be explained)
+
+Fist, we test for normality. You might have already seen this in the univariate report and can assume it, but if you want to make statisticians happy or impress people with numbers, you can do a normality test (e.g. the Shapiro-Wilks test):
+
+```{r}
+# First, run the ANOVA and save its output
+res_aov <- aov(mx_th ~ sondage,data = shape_data)
+
+# Then check for normality
+shapiro.test(res_aov$residuals)
+```
+
+If the p-value is below 0.05, the probability that the data comes from a normal distribution is very low, and the data is probably not normally distributed.
+
+If the data is not normally distributed, run a Kruskal-Wallace test. If it is normally distributed, run ANOVA.
+
+##### Kruskal-Wallace test
+
+The Kruskal_Wallace test is run to compare three or more groups in terms of a quantitative variable. For only two groups, use the Mann-Whitney test.
+
+```{r}
+kruskal.test(mx_th ~ sondage, data = shape_data)
+
+# Mann-Whitney test (for a categorial variable with only two categories)
+# wilcox.test(mx_th ~ sondage, data = shape_data)
+```
+
+Again, we look at the p-value in the result. The value below 0.05 tells us that at least one sondage is significantly different in the thickness of its pottery. To find out how the groups compare among each other, run the Dunnel test.
+
+```{r}
+library(FSA)
+
+dunnTest(mx_th ~ sondage,
+  data = shape_data,
+  method = "holm"
+)
+```
+
+In the resulting table, look at the adjusted P-values. This shows us that the difference between B and T1 is significant (below 0.05), while the other two pairs are not.
+
+If you want to display all of this in a single graph, use the following:
+
+```{r}
+library(ggstatsplot)
+
+ggbetweenstats(
+  data = shape_data,
+  x = sondage,
+  y = mx_th,
+  type = "nonparametric", # this selects Kruskal-Wallis over ANOVA
+  plot.type = "box",
+  pairwise.comparisons = TRUE,
+  pairwise.display = "significant",
+  centrality.plotting = FALSE,
+  bf.message = FALSE
+)
+```
+
+##### ANOVA
+
+If, however, the data is normally distributed, run an ANOVA.
+
+```{r}
+# First, run the ANOVA and save its output
+res_aov <- aov(mx_th ~ rim_angle,data = shape_data)
+
+# Then check for normality
+shapiro.test(res_aov$residuals)
+```
+
+The following function gives you all the information you might need, and much more.
+
+```{r}
+ggstatsplot::ggbetweenstats(shape_data, sondage, mx_th)
+```
+
+For our use case, we will simply look at the first entries in the header line. In this case, the p-value is larger than 0.05, which shows us that the relationship is not statistically significant. In narrative form, we could write:
+
+> There was no statistically significant relationship between rim thickness and excavation unit (Welch's F (2, 2.65) = 7.94, p = 0.08)
+
+The package provides a function which generates a pdf of bivariate combinations. Look at these and decide which relationships to follow up on.
+
+```{r}
+# Load necessary libraries
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(purrr)
+library(stats)
+
+# Define the function
+bivariate_statistics <- function(data) {
+  # Create a list to store results
+  results_list <- list()
+  
+  # Identify numeric and categorical variables
+  numeric_vars <- select(data, where(is.numeric))
+  categorical_vars <- select(data, where(is.character))
+  
+  # Store correlation results
+  correlation_results <- data.frame()
+  
+  # Perform correlation tests between numeric variables
+  if (ncol(numeric_vars) > 1) {
+    numeric_pairs <- combn(names(numeric_vars), 2, simplify = FALSE)
+    
+    for (pair in numeric_pairs) {
+      test_result <- cor.test(numeric_vars[[pair[1]]], numeric_vars[[pair[2]]])
+      correlation_results <- rbind(correlation_results, data.frame(
+        Variable1 = pair[1],
+        Variable2 = pair[2],
+        Correlation = test_result$estimate,
+        P_value = test_result$p.value,
+        Method = test_result$method
+      ))
+    }
+  }
+  
+  # Store chi-squared results for categorical variables
+  chi_squared_results <- data.frame()
+  
+  if (ncol(categorical_vars) > 1) {
+    categorical_pairs <- combn(names(categorical_vars), 2, simplify = FALSE)
+    
+    for (pair in categorical_pairs) {
+      contingency_table <- table(categorical_vars[[pair[1]]], categorical_vars[[pair[2]]])
+      test_result <- chisq.test(contingency_table)
+      chi_squared_results <- rbind(chi_squared_results, data.frame(
+        Variable1 = pair[1],
+        Variable2 = pair[2],
+        Chi_squared = test_result$statistic,
+        P_value = test_result$p.value,
+        Method = "Chi-squared Test"
+      ))
+    }
+  }
+  
+  # Store ANOVA/Kruskal-Wallis results for numeric-categorical pairs
+  anova_results <- data.frame()
+  
+  if (ncol(numeric_vars) > 0 && ncol(categorical_vars) > 0) {
+    for (numeric_var in names(numeric_vars)) {
+      for (categorical_var in names(categorical_vars)) {
+        # Check the number of levels in the categorical variable
+        num_levels <- length(unique(data[[categorical_var]]))
+        
+        # Only proceed if the categorical variable has at least 2 levels
+        if (num_levels < 2) {
+          next  # Skip to the next iteration if not enough levels
+        }
+        
+        # Check for normality using Shapiro-Wilk test
+        normality_test <- shapiro.test(numeric_vars[[numeric_var]][!is.na(data[[categorical_var]])])
+        p_value_normality <- normality_test$p.value
+        
+        if (p_value_normality > 0.05) {  # If normal, run ANOVA
+          test_result <- aov(as.formula(paste(numeric_var, "~", categorical_var)), data = data)
+          summary_result <- summary(test_result)[[1]]
+          
+          # Check if there are valid results before binding
+          if (length(summary_result[["F value"]]) > 0) {
+            anova_results <- rbind(anova_results, data.frame(
+              Numeric_Variable = numeric_var,
+              Categorical_Variable = categorical_var,
+              Statistic = summary_result[["F value"]][1],
+              P_value = summary_result[["Pr(>F)"]][1],
+              Method = "ANOVA"
+            ))
+          }
+        } else {  # If not normal, run Kruskal-Wallis test
+          test_result <- kruskal.test(as.formula(paste(numeric_var, "~", categorical_var)), data = data)
+          
+          # Check if Kruskal-Wallis test produced a valid result
+          if (!is.null(test_result$statistic) && !is.na(test_result$statistic)) {
+            anova_results <- rbind(anova_results, data.frame(
+              Numeric_Variable = numeric_var,
+              Categorical_Variable = categorical_var,
+              Statistic = test_result$statistic,
+              P_value = test_result$p.value,
+              Method = "Kruskal-Wallis Test"
+            ))
+          }
+        }
+      }
+    }
+  }
+  
+  # Combine results
+  results_list$correlation_results <- correlation_results
+  results_list$chi_squared_results <- chi_squared_results
+  results_list$anova_results <- anova_results
+  
+  # Create plots for numeric pairs
+  numeric_plots <- list()
+  
+  if (ncol(numeric_vars) > 1) {
+    for (pair in numeric_pairs) {
+      p <- ggplot(data, aes_string(x = pair[1], y = pair[2])) +
+        geom_point() +
+        geom_smooth(method = "lm", color = "blue") +
+        labs(title = paste("Scatter plot of", pair[1], "vs", pair[2])) +
+        theme_minimal()
+      numeric_plots[[paste(pair, collapse = "_vs_")]] <- p
+    }
+  }
+  
+  # Create plots for categorical pairs
+  categorical_plots <- list()
+  
+  if (ncol(categorical_vars) > 1) {
+    for (pair in categorical_pairs) {
+      p <- ggplot(data, aes_string(x = pair[1], fill = pair[2])) +
+        geom_bar(position = "dodge") +
+        labs(title = paste("Bar plot of", pair[1], "by", pair[2])) +
+        theme_minimal()
+      categorical_plots[[paste(pair, collapse = "_by_")]] <- p
+    }
+  }
+  
+  # Create plots for numeric-categorical pairs
+  numeric_categorical_plots <- list()
+  
+  if (ncol(numeric_vars) > 0 && ncol(categorical_vars) > 0) {
+    for (numeric_var in names(numeric_vars)) {
+      for (categorical_var in names(categorical_vars)) {
+        num_levels <- length(unique(data[[categorical_var]]))
+        
+        # Only create a plot if the categorical variable has at least 2 levels
+        if (num_levels >= 2) {
+          p <- ggplot(data |> drop_na(categorical_var), aes_string(x = categorical_var, y = numeric_var)) +
+            geom_boxplot() +
+            labs(title = paste("Boxplot of", numeric_var, "by", categorical_var)) +
+            theme_minimal()
+          numeric_categorical_plots[[paste(numeric_var, "by", categorical_var)]] <- p
+        }
+      }
+    }
+  }
+  
+  # Add plots to results
+  results_list$numeric_plots <- numeric_plots
+  results_list$categorical_plots <- categorical_plots
+  results_list$numeric_categorical_plots <- numeric_categorical_plots
+  
+  return(results_list)
+}
+
+
+# Call the function
+results <- bivariate_statistics(shape_data)
+
+# Access the results
+results$correlation_results
+results$chi_squared_results
+results$anova_results
+results$numeric_plots$diam_vs_mx_th
+results$categorical_plots$categorical1_by_categorical2
+results$numeric_categorical_plots$numeric1_by_categorical1
+
+print(results$numeric_plots)
+print(results$categorical_plots)
+print(results$numeric_categorical_plots)
+print(results$correlation_results)
+View(results$chi_squared_results)
+View(results$anova_results)
+print(results$numeric_categorical_plots$`mx_th by period`)
+
+```
+
+NO clear temporal trends are visible here.
+
+The correlations between the numeric variables are significant, but weak.
+
+The anova results interestingly indicate that there is a significant difference in thickness between the periods. The main occupation period has a much thicker rims than the previous and subsequent periods.
+
+## Pottery types
+
+On this assemblage, there has been a traditional process of making pottery types. This is based mainly on rim types. We will now associate these with the data here.
+
+Use the typology to create groups. Classify them according to rim type, then find out how they are decorated. Then see whether they seriate.
+
+Type A corresponds to rim types T1b, T1c, T1d, T3c, possibly also L3
+
+Type B : rim types E5, E4, maybe E3
+
+Type C: E3 with MCH on L
+
+Type D: too uncertain
+
+Type E: T1c, T1b with MCH on L, I with MCH on L, T with MCH or CH on L
+
+Type F: I, T1d, T3b,

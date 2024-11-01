@@ -1,0 +1,13 @@
+usethis
+devtools
+testthat
+dplyr
+tidyr
+ggplot2
+potteR
+summarytools
+GGally
+FSA
+ggstatsplot
+tibble
+patchwork

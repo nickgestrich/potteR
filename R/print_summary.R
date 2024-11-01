@@ -12,12 +12,13 @@
 #' \dontrun{
 #' guinea[[3]] |> print_summary(file = here::here("summary.pdf"))
 #' }
+
 print_summary <- function(data, file) {
-  cat("---
-title: \"Summary of variables in `r paste(data)`\"
+  cat(
+"---
+title: \"Summary of variables in `r deparse(substitute(data))`\"
 date: \"`r strftime(Sys.time())`\"
-output:
-  pdf_document
+output: pdf_document
 ---
 
 \`\`\`{r setup, include=FALSE}
